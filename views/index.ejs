@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TrustLens AI helps you understand warning signs in suspicious digital messages and make more informed decisions.">
+  <title>TrustLens AI — Think Before You Trust.</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <%- include('partials/navbar') %>
+  <main id="main">
+    <section class="hero container" id="home" aria-labelledby="hero-title">
+      <div class="hero-copy"><p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> DIGITAL AWARENESS STARTS HERE</p><h1 id="hero-title">Think Before<br>You <span>Trust.</span></h1><p class="hero-description">A convincing message isn’t always a trustworthy one. Spot potential scam signals, understand the warning signs, and decide your next step with confidence.</p><div class="hero-actions"><a class="button" href="#analyzer">Check a suspicious message <span aria-hidden="true">↗</span></a><a class="text-link" href="#how-it-works">How it works <span aria-hidden="true">↓</span></a></div><p class="hero-note">Built for everyday messages. Designed for informed decisions.</p></div>
+      <aside class="example-card" aria-labelledby="example-title"><div class="example-top"><span class="eyebrow" id="example-title">A CLOSER LOOK</span><span class="example-label">Illustrative example</span></div><div class="message-bubble"><p class="message-sender"><span class="sender-icon" aria-hidden="true">?</span> Unknown sender</p><p>“Your bank account will be <mark>blocked in 30 minutes.</mark> <mark>Share your OTP</mark> now to keep it active.”</p></div><div class="signal-row"><span class="signal-icon" aria-hidden="true">!</span><div><h3>Pressure to act quickly</h3><p>Urgency can discourage you from checking the facts.</p></div></div><div class="signal-row"><span class="signal-icon" aria-hidden="true">!</span><div><h3>A request for sensitive information</h3><p>An OTP request is a reason to pause and verify.</p></div></div><p class="example-bottom">Understand the signals. Take a safer next step.</p></aside>
+    </section>
+    <div class="topics-strip"><div class="container topics"><span>PAUSE WHEN YOU SEE</span><span>Unexpected links</span><span>OTP requests</span><span>Payment pressure</span><span>Too-good-to-be-true offers</span></div></div>
+    <section class="analyzer-section container" id="analyzer" aria-labelledby="analyzer-title"><div class="section-heading"><p class="eyebrow">YOUR SECOND LOOK</p><h2 id="analyzer-title">Something feel off? Start here.</h2><p>WhatsApp, SMS, email, or a job offer. Take a moment to look closer.</p></div><div class="analyzer-card"><div class="analyzer-top"><h3>Check a message</h3><span class="development-badge">Homepage preview</span></div><label for="message">Suspicious message</label><p class="input-help" id="message-help">Remove personal information, passwords, and OTPs before pasting. Maximum 5,000 characters.</p><textarea id="message" name="message" rows="7" maxlength="5000" aria-describedby="message-help analyzer-status" placeholder="Paste the message you’d like to understand…"></textarea><div class="analyzer-bottom"><p id="analyzer-status">Message analysis will be connected in a later development phase.</p><button class="button" type="button" disabled>Analyze message <span aria-hidden="true">↗</span></button></div></div><p class="privacy-note"><span aria-hidden="true">◇</span> Be mindful of what you share. This preview does not submit your message.</p></section>
+    <section class="how-section" id="how-it-works" aria-labelledby="how-title"><div class="container"><div class="section-heading"><p class="eyebrow">LESS GUESSWORK. MORE AWARENESS.</p><h2 id="how-title">A pause can make a difference.</h2><p>The planned analysis experience, in three simple steps.</p></div><div class="steps"><article class="step"><span class="step-number">01</span><h3>Share the message</h3><p>Paste the text that raised a question. Leave out any sensitive personal details.</p></article><article class="step"><span class="step-number">02</span><h3>Understand the signals</h3><p>AI will look for potential warning signs and explain the language that deserves attention.</p></article><article class="step"><span class="step-number">03</span><h3>Choose a safer next step</h3><p>Review the explanation and practical recommendations before you reply, click, or pay.</p></article></div></div></section>
+    <section class="about-section container" id="about" aria-labelledby="about-title"><div><p class="eyebrow">AWARENESS, NOT ABSOLUTES</p><h2 id="about-title">Better questions.<br>Safer decisions.</h2></div><div class="about-copy"><p>TrustLens AI is a hackathon project exploring how explainable AI can help people recognize digital social engineering. Our planned Gemma-powered analysis puts understandable explanations at the center of the experience.</p><p class="disclaimer">No tool can prove a message is safe or fraudulent from text alone. Always verify important requests through a trusted, official channel.</p></div></section>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>
