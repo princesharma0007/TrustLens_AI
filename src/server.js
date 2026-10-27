@@ -10,7 +10,34 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// Parse JSON with a 5 KB request body limit
+// Rate limiter middleware – max 10 requests per minute per IP for /api/analyze
+const rateLimiter = (req, res, next) => {
+  if (req.path !== '/api/analyze') return next();
+  const ip = req.ip;
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute
+  if (!global.__rateLimitMap) global.__rateLimitMap = {};
+  const entry = global.__rateLimitMap[ip] || { count: 0, start: now };
+  // Reset if window passed
+  if (now - entry.start > windowMs) {
+    entry.count = 0;
+    entry.start = now;
+  }
+  entry.count += 1;
+  global.__rateLimitMap[ip] = entry;
+  // Clean up old entries
+  for (const [key, val] of Object.entries(global.__rateLimitMap)) {
+    if (now - val.start > windowMs) delete global.__rateLimitMap[key];
+  }
+  if (entry.count > 10) {
+    return res.status(429).json({ success: false, error: 'Too many requests' });
+  }
+  next();
+};
+
+// Apply rate limiter before routing
+app.use(rateLimiter);
+
 app.use(express.json({ limit: '5kb' }));
 
 // Mount API routes under /api
