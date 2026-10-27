@@ -105,7 +105,9 @@ if (analyzerForm) {
     badge.className = `risk-badge risk-${risk.replaceAll(' ', '-')}`;
     document.querySelector('#analysis-mode').textContent = demo
       ? 'MOCK DEMO — fixed sample data; not AI analysis of your message'
-      : `Analysis mode reported by service: ${data.analysisMode}`;
+      : data.analysisMode === 'rule-based'
+        ? 'Rule-based prototype — not Gemma AI analysis'
+        : `Analysis mode reported by service: ${data.analysisMode}`;
     document.querySelector('#result-summary').textContent = data.summary;
     document.querySelector('#result-uncertainty').textContent = data.uncertainty;
     const indicators = document.querySelector('#result-indicators');
@@ -158,6 +160,8 @@ if (analyzerForm) {
           throw new Error('The analysis service is unavailable. Please check that the backend is running and try again.');
         }
         if (response.status === 429) throw new Error('Too many requests. Please wait a moment and try again.');
+        if (response.status === 400) throw new Error('The message was not accepted. Submit text containing 1–5,000 characters.');
+        if (response.status === 413) throw new Error('The request is too large. Shorten your message and try again.');
         throw new Error(`The analysis request failed (HTTP ${response.status}). Please try again.`);
       }
       let data;
