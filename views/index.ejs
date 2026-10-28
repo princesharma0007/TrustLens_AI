@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('partials/head') %>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <%- include('partials/navbar') %>
+  <main id="main">
+    <%- include('partials/hero') %>
+
+    <section class="analyzer-section container" id="analyzer" aria-labelledby="analyzer-title">
+      <div class="workspace-layout">
+        <div class="workspace-main">
+          <div class="analyzer-card">
+            <div class="analyzer-top"><div><p class="eyebrow">THE MESSAGE ANALYZER</p><h2 id="analyzer-title">Analyze a message</h2><p>Something feel off? Take a closer look before you act.</p></div><span class="tool-mark" aria-hidden="true">01 / CHECK</span></div>
+            <div class="analyzer-tabs" role="tablist" aria-label="Message input method" hidden>
+              <button class="analyzer-tab" id="text-tab" type="button" role="tab" aria-selected="true" aria-controls="text-panel" tabindex="0">Paste Text</button>
+              <button class="analyzer-tab" id="screenshot-tab" type="button" role="tab" aria-selected="false" aria-controls="screenshot-panel" tabindex="-1">Upload Screenshot</button>
+            </div>
+            <section id="text-panel" role="tabpanel" aria-labelledby="text-tab">
+              <form id="analyzer-form" novalidate>
+                <div class="field-heading"><label for="message">Message to review</label><span>WhatsApp · SMS · Email · Job offers</span></div>
+                <p class="input-help" id="message-help">Remove names, account details, passwords, and OTPs before pasting.</p>
+                <textarea id="message" name="message" rows="6" maxlength="5000" required aria-describedby="message-help character-count analyzer-error" placeholder="Paste the message that made you pause…"></textarea>
+                <p class="character-count" id="character-count">0 / 5,000 characters</p>
+                <p class="analyzer-error" id="analyzer-error" role="alert" hidden></p>
+                <div class="analyzer-bottom"><p id="analyzer-status" role="status" aria-live="polite">Ready when you are.</p><button class="button" id="analyze-button" type="submit" disabled>Analyze message ↗</button></div>
+                <noscript><p>Enable JavaScript to analyze a message.</p></noscript>
+                <details class="demo-controls"><summary>Explore sample reports <span class="sample-note">Mock data only</span></summary><p>Fixed samples for UI testing. They do not analyze your message or send it to the server.</p><div class="demo-buttons"><button type="button" data-demo="high concern" disabled>Demo: High Concern</button><button type="button" data-demo="needs verification" disabled>Demo: Needs Verification</button><button type="button" data-demo="unclear" disabled>Demo: Unclear</button></div></details>
+              </form>
+              <p class="privacy-note"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" aria-hidden="true"><rect x="2" y="7" width="10" height="8" rx="2" stroke="currentColor"/><path d="M4 7V4a3 3 0 0 1 6 0v3" stroke="currentColor"/></svg>Analyze sends your text to the analysis service. Share only what’s necessary.</p>
+            </section>
+            <section id="screenshot-panel" data-analysis-available="<%= typeof imageAnalysisAvailable !== 'undefined' && imageAnalysisAvailable ? 'true' : 'false' %>" role="tabpanel" aria-labelledby="screenshot-tab" hidden>
+              <div class="screenshot-heading"><h3>Review a screenshot</h3><span class="development-badge"><%= typeof imageAnalysisAvailable !== 'undefined' && imageAnalysisAvailable ? 'Local English OCR' : 'Unavailable' %></span></div>
+              <p class="input-help" id="screenshot-help">PNG, JPG, or WebP · Up to 5 MB (5,242,880 bytes). Selection stays local until you choose Analyze Screenshot. Remove sensitive details before submitting.</p>
+              <div class="upload-area"><svg class="upload-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><rect x="3" y="3" width="22" height="22" rx="4" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/><path d="m4 21 7-7 4 4 4-4 6 6" stroke="currentColor" stroke-width="1.5"/></svg><label for="screenshot-input">Choose a screenshot to preview</label><input class="screenshot-input" id="screenshot-input" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" aria-describedby="screenshot-help screenshot-error"></div>
+              <p class="analyzer-error" id="screenshot-error" role="alert" hidden></p>
+              <figure class="screenshot-preview" id="screenshot-preview" hidden><img id="screenshot-image" alt="Preview of the screenshot you selected"><figcaption><span id="screenshot-name"></span><span id="screenshot-size"></span></figcaption></figure>
+              <div class="screenshot-actions" id="screenshot-actions" hidden><button class="secondary-button" id="change-screenshot" type="button">Change Image</button><button class="secondary-button" id="remove-screenshot" type="button">Remove Image</button></div>
+              <p class="input-help" id="screenshot-status" role="status" aria-live="polite">Choose a clear screenshot containing English text.</p>
+              <div class="analyzer-bottom"><p id="screenshot-privacy">Analyze sends this image for local text extraction and rule-based analysis. Images are processed in memory, not saved.</p><button class="button" id="analyze-screenshot" type="button" disabled aria-describedby="screenshot-privacy">Analyze Screenshot</button></div>
+            </section>
+          </div>
+          <section class="results-panel" id="analysis-output" aria-labelledby="results-title" aria-busy="false" hidden>
+            <div class="report-heading"><div><p class="eyebrow">YOUR ANALYSIS REPORT</p><h3 id="results-title" tabindex="-1">Message analysis</h3></div><span class="tool-mark" aria-hidden="true">02 / REVIEW</span></div>
+            <div id="analysis-skeleton" aria-hidden="true" hidden><div class="skeleton skeleton-badge"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line short"></div><div class="result-grid"><div><h4>Detected signals</h4><div class="skeleton skeleton-block"></div></div><div><h4>Recommended actions</h4><div class="skeleton skeleton-block"></div></div></div><div class="skeleton skeleton-notice"></div></div>
+            <div id="analysis-results" hidden>
+              <div class="report-overview"><p class="risk-badge" id="risk-level"></p><p class="mode-label" id="analysis-mode"></p><p id="result-summary"></p></div>
+              <div class="result-grid"><section><h4>Detected signals</h4><div id="result-indicators"></div></section><section class="actions-section"><h4>Recommended actions</h4><ol id="result-actions"></ol></section></div>
+              <div class="uncertainty"><span class="info-symbol" aria-hidden="true">i</span><div><h4>Keep the context in mind</h4><p id="result-uncertainty"></p></div></div>
+              <p class="result-disclaimer">An indicative assessment, not proof of safety or fraud. Verify important requests through an official channel.</p>
+            </div>
+          </section>
+        </div>
+        <aside class="workspace-aside" aria-labelledby="perspective-title">
+          <p class="eyebrow">A MOMENT OF PERSPECTIVE</p><h3 id="perspective-title">A convincing message<br>isn’t always a credible one.</h3><p>Watch for language that pushes you to act before you have time to think.</p>
+          <dl class="signals-list"><div><dt>Pressure to act</dt><dd>Urgent deadlines or threats to block an account.</dd></div><div><dt>Requests for access</dt><dd>Passwords, payment details, or verification codes.</dd></div><div><dt>Promises without proof</dt><dd>Unexpected rewards or offers that skip the usual checks.</dd></div></dl>
+          <div class="aside-note"><span class="note-line" aria-hidden="true"></span><p>Pause. Verify independently.<br>Then decide.</p></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="feature-section" aria-labelledby="feature-title"><div class="container">
+      <div class="feature-heading"><p class="eyebrow">FROM A QUESTION TO A CLEARER NEXT STEP</p><h2 id="feature-title">See the signals.<br>Understand the risk.</h2><p>More perspective on the message.<br>More confidence in what you do next.</p></div>
+      <div class="features">
+        <article class="feature"><span class="feature-number" aria-hidden="true">01</span><h3>Spot suspicious patterns</h3><p>Recognize urgency, unexpected requests for sensitive information, and pressure to act before you can verify.</p><div class="feature-detail"><span>LOOK CLOSER</span><p>What is the message asking you to do — and why the rush?</p></div></article>
+        <article class="feature"><span class="feature-number" aria-hidden="true">02</span><h3>Understand the explanation</h3><p>Connect each warning to the exact words that triggered it. Understand why the language deserves attention.</p><div class="feature-detail"><span>CONNECT THE CONTEXT</span><p>Quoted evidence. Plain-language explanations. Clear limitations.</p></div></article>
+        <article class="feature"><span class="feature-number" aria-hidden="true">03</span><h3>Take safer action</h3><p>Turn the findings into practical next steps. Pause before replying, keep private details private, and verify independently.</p><div class="feature-detail"><span>CHOOSE YOUR NEXT STEP</span><p>Use a trusted, official channel before you click, share, or pay.</p></div></article>
+      </div>
+    </div></section>
+    <section class="how-section" id="how-it-works" aria-labelledby="how-title"><div class="container">
+      <div class="section-heading"><p class="eyebrow">FROM UNCERTAINTY TO UNDERSTANDING</p><h2 id="how-title">How TrustLens works.</h2><p>Three simple steps to a more informed decision.</p></div>
+      <div class="steps"><article class="step"><span class="step-number">01</span><h3>Submit a message</h3><p>Paste the text that raised a question. Leave sensitive personal information out.</p></article><article class="step"><span class="step-number">02</span><h3>Review warning signals</h3><p>See the language that deserves attention and an explanation of why it matters.</p></article><article class="step"><span class="step-number">03</span><h3>Make an informed decision</h3><p>Use practical safety recommendations before you reply, click, or pay.</p></article></div>
+    </div></section>
+    <section class="about-section container" id="about" aria-labelledby="about-title"><div><p class="eyebrow">AWARENESS, NOT ABSOLUTES</p><h2 id="about-title">Clarity over certainty.</h2><p class="about-tagline">Think Before You Trust.</p></div><div class="about-copy"><p>TrustLens AI explores how explainable technology can help people recognize digital social engineering. Understandable signals and practical next steps come first.</p><p class="disclaimer">This prototype currently uses rule-based checks, not Gemma AI. No tool can verify a sender’s identity or prove a message safe from text alone.</p></div></section>
+    <section class="final-cta container" aria-labelledby="cta-title"><div><p class="eyebrow">CONFIDENCE STARTS WITH A PAUSE</p><h2 id="cta-title">A safer decision starts<br>with a second look.</h2><p>A second look today can help you recognize the signs tomorrow.</p></div><a class="button" href="/#analyzer">Check a Message <span aria-hidden="true">→</span></a></section>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>
