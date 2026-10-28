@@ -4,7 +4,7 @@ A lightweight Express, EJS, and vanilla JavaScript scam-awareness prototype.
 
 ## Run locally
 
-Requirements: Node.js LTS and npm.
+Requirements: Node.js 20.9+ (a current LTS release is recommended) and npm.
 
 ```bash
 npm ci
@@ -79,6 +79,72 @@ focus. Use network throttling to inspect the skeleton; blocking `/api/analyze`
 should show an error without mock results.
 
 Never commit `.env` or real API keys. Remove personal information before testing.
-The application does not store messages or log request bodies. Screenshot
-analysis, authentication, feedback storage, and provider-specific Gemma
-integration are not implemented.
+The application does not store messages or log request bodies. Authentication, feedback storage, and provider-specific Gemma integration are not implemented.
+
+
+## Screenshot analysis
+
+`POST /api/analyze-image` accepts `multipart/form-data`, exactly one file under
+`image`. Supported actual formats are PNG, JPEG, and WebP, up to 5 MB
+(5,242,880 bytes), 12 megapixels, and 10,000 pixels on either axis. Animated
+images, SVG, and files that cannot be fully decoded are rejected. Filenames and
+client MIME declarations are not trusted for server-side validation.
+
+The server decodes and normalizes the image with Sharp, then reads English text
+with local Tesseract.js OCR. Extracted text is passed directly to the existing
+rule-based analysis service. The response keeps the same six fields, with
+`analysisMode: "ocr + rule-based"` and an additional OCR limitation in
+`uncertainty`. Neither the full extracted text nor the image is returned.
+This is **not Gemma analysis**.
+
+English language data is included in the `@tesseract.js-data/eng` npm package.
+`npm ci` installs it together with the OCR engine. There is no startup model
+or runtime CDN download and no OCR credential to configure. OCR runs only when
+an image-analysis request arrives. The browser enables submission after the
+server reports the local language data is available and the preview decodes.
+No upload occurs when a file is selected.
+
+Image buffers and OCR text are held only in memory. The multipart handler has
+no disk storage, normalized images have metadata removed, and each OCR worker
+is terminated after its request. Uploads are never placed in `public/`.
+Responses have `Cache-Control: no-store`; private file names, pixels, and text
+are not logged. The browser retains the selected image only for preview/retry
+until removal or leaving the page. Only explicit Analyze submits it.
+
+Limits per Node process:
+
+- 10 image requests per IP per minute, including invalid requests.
+- At most 2 simultaneous multipart uploads and 1 decoding/OCR job; busy clients
+  receive 429 instead of being queued.
+- A 10-second decoding limit and 45-second OCR deadline, with worker cleanup
+  on client disconnect. The browser allows 65 seconds for an image request.
+- Up to 20,000 extracted characters; longer images require cropping rather
+  than silently discarding text.
+
+Unreadable/low-quality English text returns 422. OCR failure returns a safe
+error; it never triggers mock results. Small text, blur, mixed languages, and
+complex layouts may reduce accuracy. OCR confidence is used only to reject
+unreadable text, never displayed as a scam probability. Verify the original
+image and important requests independently.
+
+The IP rate limit is in memory and resets on restart. Multiple server processes
+would need a shared limiter. Reverse-proxy deployments must configure Express
+`trust proxy` for their known proxy topology before relying on per-client IP
+limits; do not enable blanket trust.
+
+Run all deterministic tests (OCR is mocked at the engine boundary):
+
+```bash
+npm test -- --runInBand
+```
+
+Run the separate real OCR checks without mocks:
+
+```bash
+RUN_REAL_OCR=1 npm test -- --runInBand tests/ocr.real.test.js
+```
+
+`tests/fixtures/message-screenshot.png` is a generated, non-private test image.
+For a manual real upload, start the app, choose Upload Screenshot, select that
+fixture, and click Analyze Screenshot. Expect High Concern, an OTP indicator,
+and a visible **Local OCR + rule-based prototype — not Gemma AI analysis** label.

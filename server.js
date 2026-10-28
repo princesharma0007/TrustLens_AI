@@ -5,16 +5,17 @@ const express = require('express');
 const helmet = require('helmet');
 const path = require('path');
 const apiRouter = require('./routes/api');
+const imageAnalysis = require('./services/imageAnalysisService');
 
 const app = express();
 
 // Security headers
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: { directives: { imgSrc: ["'self'", 'data:', 'blob:'] } } }));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/', (req, res) => res.render('index'));
+app.get('/', (req, res) => res.render('index', { imageAnalysisAvailable: imageAnalysis.isAvailable() }));
 
 // Accommodate 5,000 characters, including UTF-8 and JSON-escaped text.
 // The message validator separately enforces the character limit.
@@ -44,16 +45,16 @@ app.use((err, req, res, next) => {
   const status =
     Number.isInteger(err.status) &&
     err.status >= 400 &&
-    err.status < 500
+    err.status < 600
       ? err.status
       : 500;
 
   const message =
-    status === 500
-      ? 'Internal server error'
-      : (err.publicMessage || 'Request failed');
+    err.isPublic
+      ? err.publicMessage
+      : status >= 500 ? 'Internal server error' : 'Request failed';
 
-  if (status === 500) console.error('Analysis request failed.');
+  if (status >= 500) console.error('Analysis request failed.');
 
   return res.status(status).json({
     success: false,

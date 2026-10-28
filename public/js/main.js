@@ -47,6 +47,8 @@ if (analyzerForm) {
     ['unclear', 'Unclear'],
   ]);
   let busy = false;
+  let currentController = null;
+  window.addEventListener('pagehide', () => currentController?.abort());
   submit.disabled = false;
   demoButtons.forEach((button) => { button.disabled = false; });
 
@@ -65,17 +67,19 @@ if (analyzerForm) {
   message.addEventListener('input', () => {
     updateCounter();
     clearError();
-    output.hidden = true;
+    if (output.dataset.source === 'text') { output.hidden = true; output.dataset.hasResult = 'false'; }
     status.textContent = 'Message changed. Analyze it to see updated results.';
   });
 
-  function setBusy(value) {
+  function setBusy(value, source = 'text') {
     busy = value;
     submit.disabled = value;
     message.readOnly = value;
     demoButtons.forEach((button) => { button.disabled = value; });
+    document.querySelectorAll('.analyzer-tab').forEach((tab) => { tab.disabled = value; });
     output.setAttribute('aria-busy', String(value));
-    submit.textContent = value ? 'Analyzing…' : 'Analyze message ↗';
+    submit.textContent = value && source === 'text' ? 'Analyzing…' : 'Analyze message ↗';
+    document.dispatchEvent(new CustomEvent('trustlens:analysis-state', { detail: { busy: value, source } }));
   }
 
   const isText = (value) => typeof value === 'string' && value.trim().length > 0;
@@ -98,13 +102,15 @@ if (analyzerForm) {
     return node;
   }
 
-  function render(data, demo = false) {
+  function render(data, demo = false, source = 'text') {
     const risk = data.riskLevel.trim().toLowerCase();
     const badge = document.querySelector('#risk-level');
     badge.textContent = riskLabels.get(risk);
     badge.className = `risk-badge risk-${risk.replaceAll(' ', '-')}`;
     document.querySelector('#analysis-mode').textContent = demo
       ? 'MOCK DEMO — fixed sample data; not AI analysis of your message'
+      : data.analysisMode === 'ocr + rule-based'
+        ? 'Local OCR + rule-based prototype — not Gemma AI analysis'
       : data.analysisMode === 'rule-based'
         ? 'Rule-based prototype — not Gemma AI analysis'
         : `Analysis mode reported by service: ${data.analysisMode}`;
@@ -126,12 +132,14 @@ if (analyzerForm) {
     skeleton.hidden = true;
     results.hidden = false;
     output.hidden = false;
-    title.textContent = demo ? 'Sample results — mock demo' : 'Message analysis';
+    output.dataset.source = source;
+    output.dataset.hasResult = 'true';
+    title.textContent = demo ? 'Sample results — mock demo' : source === 'image' ? 'Screenshot analysis' : 'Message analysis';
   }
 
   analyzerForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (busy) return;
+    if (busy || document.querySelector('#text-panel').hidden) return;
     clearError();
     if (!message.value.trim() || message.value.length > 5000) {
       error.textContent = message.value.trim() ? 'Keep your message within 5,000 characters.' : 'Paste a message before starting the analysis.';
@@ -140,25 +148,51 @@ if (analyzerForm) {
       message.focus();
       return;
     }
-    setBusy(true);
+    await analyzeRequest({ message: message.value.trim() });
+  });
+
+  async function analyzeRequest(payload) {
+    if (busy) return;
+    const source = payload.image ? 'image' : 'text';
+    const activeError = source === 'image' ? document.querySelector('#screenshot-error') : error;
+    const activeStatus = source === 'image' ? document.querySelector('#screenshot-status') : status;
+    activeError.hidden = true;
+    activeError.textContent = '';
+    setBusy(true, source);
+    output.dataset.hasResult = 'false';
     results.hidden = true;
     skeleton.hidden = false;
     output.hidden = false;
-    title.textContent = 'Analyzing your message';
-    status.textContent = 'Analyzing your message. Please wait.';
+    title.textContent = source === 'image' ? 'Reading and analyzing your screenshot' : 'Analyzing your message';
+    activeStatus.textContent = source === 'image' ? 'Reading screenshot text and checking warning signs. Please wait.' : 'Analyzing your message. Please wait.';
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 30000);
+    currentController = controller;
+    const timeout = window.setTimeout(() => controller.abort(), source === 'image' ? 65000 : 30000);
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ message: message.value.trim() }),
-        signal: controller.signal,
+      let body;
+      const headers = { Accept: 'application/json' };
+      if (source === 'image') {
+        body = new FormData();
+        body.append('image', payload.image);
+      } else {
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify(payload);
+      }
+      const response = await fetch(source === 'image' ? '/api/analyze-image' : '/api/analyze', {
+        method: 'POST', headers, body, signal: controller.signal,
       });
       if (!response.ok) {
-        if (response.status === 404 || response.status === 405 || response.status >= 500) {
-          throw new Error('The analysis service is unavailable. Please check that the backend is running and try again.');
+        if (source === 'image') {
+          // Display only the public JSON error, as text. Never show raw HTML,
+          // worker output, or an automatic mock report.
+          let failure;
+          try { failure = await response.json(); } catch (error) {
+            if (error.name === 'AbortError') throw error;
+          }
+          if (isText(failure?.error) && failure.error.length <= 300) throw new Error(failure.error);
+          throw new Error('Screenshot analysis failed. Try a clearer image or paste the message.');
         }
+        if (response.status === 404 || response.status === 405 || response.status >= 500) throw new Error('The analysis service is unavailable. Please check that the backend is running and try again.');
         if (response.status === 429) throw new Error('Too many requests. Please wait a moment and try again.');
         if (response.status === 400) throw new Error('The message was not accepted. Submit text containing 1–5,000 characters.');
         if (response.status === 413) throw new Error('The request is too large. Shorten your message and try again.');
@@ -169,22 +203,32 @@ if (analyzerForm) {
         if (failure.name === 'AbortError') throw failure;
         throw new Error('The analysis service did not return valid JSON. Please try again.');
       }
-      render(validateResponse(data));
-      status.textContent = 'Analysis complete. Review the results below.';
+      render(validateResponse(data), false, source);
+      activeStatus.textContent = 'Analysis complete. Review the results below.';
     } catch (failure) {
       output.hidden = true;
-      error.textContent = failure.name === 'AbortError'
+      activeError.textContent = failure.name === 'AbortError'
         ? 'The analysis request timed out. Please try again.'
         : failure instanceof TypeError
           ? 'Could not connect to the analysis service. Check your connection and that the backend is running.'
           : failure.message;
-      error.hidden = false;
-      status.textContent = 'Analysis could not be completed.';
+      activeError.hidden = false;
+      activeStatus.textContent = 'Analysis could not be completed. You can try again.';
     } finally {
       window.clearTimeout(timeout);
-      setBusy(false);
+      currentController = null;
+      setBusy(false, source);
       if (!output.hidden) title.focus();
     }
+  }
+
+  // Shared request/render path keeps image reports subject to the exact same
+  // contract validation and safe DOM rendering as text reports.
+  window.TrustLensAnalysis = Object.freeze({
+    analyzeImage: (file) => {
+      if (file instanceof File) return analyzeRequest({ image: file });
+    },
+    isBusy: () => busy,
   });
 
   demoButtons.forEach((button) => button.addEventListener('click', () => {

@@ -1,0 +1,35 @@
+/* Shared tokens for the current homepage and future EJS pages. */
+:root {
+  color-scheme: light;
+  --page: #f8fafd;
+  --surface: #fff;
+  --ink: #111827;
+  --muted: #64748b;
+  --primary: #14213d;
+  --primary-hover: #203454;
+  --brand: #3454d1;
+  --brand-hover: #2945b5;
+  --warning-ink: #88530c;
+  --interactive: #4f6ef7;
+  --accent-surface: #eef3ff;
+  --border: #e3e9f2;
+  --border-strong: #cbd5e1;
+  --muted-surface: #f1f5f9;
+  --high: #b42318;
+  --high-surface: #fef3f2;
+  --warning: #b7791f;
+  --warning-surface: #fffaeb;
+  --safety: #16856a;
+  --safety-ink: #116e58;
+  --safety-surface: #ecfdf5;
+  --neutral: #475467;
+  --shadow: 0 4px 20px rgb(15 23 42 / 3%);
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+  --radius: 14px;
+  --control-radius: 10px;
+}
