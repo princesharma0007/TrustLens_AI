@@ -19,7 +19,16 @@ No API key or database is required for the current prototype.
 
 Analysis uses **rule-based heuristics, not Gemma AI**. The frontend explicitly
 labels this mode and explains that an assessment cannot prove safety or fraud.
-The optional Gemma key in `.env.example` is not used by the current service.
+The existing Gemma-compatible HTTP adapter is used only when both
+`GEMMA_API_KEY` and `GEMMA_API_URL` are set. Its endpoint must accept JSON
+`{ "message": "..." }` and return the analysis contract; this is not a universal
+vendor-specific Gemma API client. Provider responses are validated and known
+legacy field names/envelopes are normalized before reaching the browser.
+
+A configured provider failure returns a safe 503 by default. Rule-based fallback
+is used only when `GEMMA_FALLBACK_ENABLED=true`, and is explicitly disclosed in
+`uncertainty`. Leaving the provider unconfigured selects the existing local
+rule-based engine; it never claims Gemma analysis.
 Mock samples are separate, explicitly labeled UI demos and are never used as
 fallbacks when a real API request fails.
 
@@ -79,7 +88,7 @@ focus. Use network throttling to inspect the skeleton; blocking `/api/analyze`
 should show an error without mock results.
 
 Never commit `.env` or real API keys. Remove personal information before testing.
-The application does not store messages or log request bodies. Authentication, feedback storage, and provider-specific Gemma integration are not implemented.
+The application does not store messages or log request bodies. Authentication, feedback storage, and a vendor-specific Gemma SDK integration are not implemented.
 
 
 ## Screenshot analysis
@@ -93,8 +102,8 @@ client MIME declarations are not trusted for server-side validation.
 The server decodes and normalizes the image with Sharp, then reads English text
 with local Tesseract.js OCR. Extracted text is passed directly to the existing
 rule-based analysis service. The response keeps the same six fields, with
-`analysisMode: "ocr + rule-based"` and an additional OCR limitation in
-`uncertainty`. Neither the full extracted text nor the image is returned.
+`analysisMode: "ocr + rule-based"` by default (or `"ocr + gemma-4"` when the
+configured adapter actually succeeds), plus an OCR limitation in `uncertainty`. Neither the full extracted text nor the image is returned.
 This is **not Gemma analysis**.
 
 English language data is included in the `@tesseract.js-data/eng` npm package.
@@ -148,3 +157,21 @@ RUN_REAL_OCR=1 npm test -- --runInBand tests/ocr.real.test.js
 For a manual real upload, start the app, choose Upload Screenshot, select that
 fixture, and click Analyze Screenshot. Expect High Concern, an OTP indicator,
 and a visible **Local OCR + rule-based prototype — not Gemma AI analysis** label.
+
+
+## Analysis response regression
+
+Successful text and image responses expose the six top-level fields documented
+above. In particular, `uncertainty` is explanatory text, not a numeric score or
+fraud probability. Empty indicator arrays are valid. Unsupported provider
+findings are rejected rather than fabricated; quoted evidence must occur in the
+submitted message. Legacy numeric provider uncertainty is described as an
+unverified numeric measure, not presented as a probability.
+
+Transaction language and protective instructions (such as forwarding an SMS to
+block an unrecognized transaction) are contextual patterns, not proof of fraud.
+The rules recommend independently checking official bank channels rather than
+trusting or condemning the embedded contact details.
+
+Text analysis is limited to 10 POST requests per IP per minute, independently of
+the screenshot limiter. Both use process-local memory stores.

@@ -1,9 +1,22 @@
 // tests/api.test.js
 const request = require('supertest');
 const app = require('../server');
+const originalFetch = global.fetch;
+const providerKeys = ['GEMMA_API_KEY', 'GEMMA_API_URL', 'GEMMA_FALLBACK_ENABLED'];
+const originalEnv = Object.fromEntries(providerKeys.map(key => [key, process.env[key]]));
+beforeEach(() => {
+  providerKeys.forEach(key => { delete process.env[key]; });
+  app.locals.textRateLimitStore.resetAll();
+});
+afterEach(() => {
+  global.fetch = originalFetch;
+  for (const key of providerKeys) {
+    if (originalEnv[key] === undefined) delete process.env[key]; else process.env[key] = originalEnv[key];
+  }
+  jest.restoreAllMocks();
+});
 
 describe('POST /api/analyze', () => {
-  beforeEach(() => { global.__rateLimitMap = {}; });
   // Restore spies and mocks after each test
   afterEach(() => jest.restoreAllMocks());
 
@@ -17,12 +30,11 @@ describe('POST /api/analyze', () => {
       .expect('Content-Type', /json/)
       .expect(200);
 
-<<<<<<< HEAD
     const a = res.body;
     expect(Object.keys(a).sort()).toEqual([
       'riskLevel', 'summary', 'indicators', 'recommendedActions', 'uncertainty', 'analysisMode'
     ].sort());
-    expect(['high concern', 'needs verification', 'unclear']).toContain(a.riskLevel);
+    expect(['low concern', 'high concern', 'needs verification', 'unclear']).toContain(a.riskLevel);
     expect(a.summary).toEqual(expect.any(String));
     expect(a.indicators.length).toBeGreaterThan(0);
     a.indicators.forEach(indicator => {
@@ -33,23 +45,6 @@ describe('POST /api/analyze', () => {
     expect(Array.isArray(a.recommendedActions)).toBe(true);
     expect(a.analysisMode).toBe('rule-based');
     expect(a.uncertainty).toContain('not Gemma AI');
-=======
-    expect(res.body).toHaveProperty('success', true);
-    expect(res.body).toHaveProperty('analysis');
-
-    const a = res.body.analysis;
-    expect(a).toHaveProperty('riskLevel');
-    expect(a).toHaveProperty('riskScore');
-    expect(a).toHaveProperty('summary');
-    expect(a).toHaveProperty('indicators');
-    expect(Array.isArray(a.indicators)).toBe(true);
-    expect(a).toHaveProperty('recommendedActions');
-    expect(a).toHaveProperty('model');
-    expect(a).toHaveProperty('disclaimer');
-    expect(a).toHaveProperty('uncertainty');
-    expect(typeof a.uncertainty).toBe('number');
-    expect(a).toHaveProperty('analysisMode', 'rule-based');
->>>>>>> origin/feature
   });
 
   // ---- Validation / error cases ----
@@ -92,12 +87,8 @@ describe('POST /api/analyze', () => {
   });
 
   test('oversized message yields 400', async () => {
-<<<<<<< HEAD
     const long = 'a'.repeat(5001);
 
-=======
-    const long = 'a'.repeat(2001);
->>>>>>> origin/feature
     const res = await request(app)
       .post('/api/analyze')
       .send({ message: long })
@@ -122,7 +113,6 @@ describe('POST /api/analyze', () => {
   });
 
   test('service error returns 500 with safe message', async () => {
-<<<<<<< HEAD
     const log = jest.spyOn(console, 'error').mockImplementation(() => {});
     jest
       .spyOn(require('../services/gemmaService'), 'analyze')
@@ -130,10 +120,6 @@ describe('POST /api/analyze', () => {
         throw new Error('Service failure');
       });
 
-=======
-    jest.spyOn(require('../src/services/gemmaService'), 'analyze')
-      .mockImplementation(() => { throw new Error('Service failure'); });
->>>>>>> origin/feature
     const res = await request(app)
       .post('/api/analyze')
       .send({ message: 'Please analyze this message' })
@@ -203,7 +189,7 @@ describe('Homepage integration', () => {
       riskLevel: 'high',
       riskScore: 85,
       summary: 'Mocked Gemma summary',
-      indicators: [{ title: 'Mock', evidence: 'mock', explanation: 'mock' }],
+      indicators: [{ title: 'OTP request', evidence: 'OTP', explanation: 'Requests authentication information.' }],
       recommendedActions: ['action1'],
       uncertainty: 15
     };
@@ -215,20 +201,22 @@ describe('Homepage integration', () => {
 
     const res = await request(app)
       .post('/api/analyze')
-      .send({ message: 'any message' })
+      .send({ message: 'Please share your OTP.' })
       .expect('Content-Type', /json/)
       .expect(200);
 
-    const a = res.body.analysis;
+    const a = res.body;
     expect(a.analysisMode).toBe('gemma-4');
-    expect(a.riskLevel).toBe(gemmaResponse.riskLevel);
-    expect(a.riskScore).toBe(gemmaResponse.riskScore);
+    expect(a.riskLevel).toBe('high concern');
+    expect(typeof a.uncertainty).toBe('string');
+    expect(a.indicators[0].type).toBe('OTP request');
 
     delete process.env.GEMMA_API_KEY;
     delete process.env.GEMMA_API_URL;
   });
 
-  test('Gemma inference fallback on error returns rule-based', async () => {
+  test('explicitly enabled Gemma fallback on error returns rule-based', async () => {
+    process.env.GEMMA_FALLBACK_ENABLED = 'true';
     process.env.GEMMA_API_KEY = 'test-key';
     process.env.GEMMA_API_URL = 'https://example.com/gemma';
 
@@ -241,9 +229,9 @@ describe('Homepage integration', () => {
       .expect('Content-Type', /json/)
       .expect(200);
 
-    const a = res.body.analysis;
+    const a = res.body;
     expect(a.analysisMode).toBe('rule-based');
-    expect(a.model).toBe('placeholder‑rule‑based');
+    expect(a.uncertainty).toContain('explicitly enabled rule-based fallback');
 
     delete process.env.GEMMA_API_KEY;
     delete process.env.GEMMA_API_URL;
@@ -252,8 +240,6 @@ describe('Homepage integration', () => {
 
   // ---- Rate limiter test ----
   test('rate limiting returns 429 after 10 requests per minute', async () => {
-    // Reset rate limit map
-    global.__rateLimitMap = {};
     for (let i = 0; i < 11; i++) {
       const res = await request(app)
         .post('/api/analyze')

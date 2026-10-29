@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const path = require('path');
 const apiRouter = require('./routes/api');
 const imageAnalysis = require('./services/imageAnalysisService');
+const { rateLimit, MemoryStore } = require('express-rate-limit');
 
 const app = express();
 
@@ -16,6 +17,18 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.render('index', { imageAnalysisAvailable: imageAnalysis.isAvailable() }));
+
+// Preserve the text API's 10-per-minute limit independently of image uploads.
+const textRateLimitStore = new MemoryStore();
+app.locals.textRateLimitStore = textRateLimitStore;
+app.post('/api/analyze', rateLimit({
+  windowMs: 60000,
+  limit: 10,
+  store: textRateLimitStore,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests' },
+}));
 
 // Accommodate 5,000 characters, including UTF-8 and JSON-escaped text.
 // The message validator separately enforces the character limit.

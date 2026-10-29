@@ -41,14 +41,55 @@ if (analyzerForm) {
   const results = document.querySelector('#analysis-results');
   const title = document.querySelector('#results-title');
   const demoButtons = [...document.querySelectorAll('[data-demo]')];
+  const notificationSources = ['text', 'image'];
+  function clearRiskNotification(source) {
+    for (const kind of source ? [source] : notificationSources) {
+      const notice = document.querySelector(`#risk-notification-${kind}`);
+      if (notice) notice.hidden = true;
+    }
+  }
+  function showRiskNotification(data, demo, source) {
+    const state = window.TrustLensRiskNotification.describe(data.riskLevel);
+    const prefix = `#risk-notification-${source}`;
+    const notice = document.querySelector(prefix);
+    if (!notice) return state;
+    const sample = demo || ['mock', 'demo'].includes(data.analysisMode.trim().toLowerCase());
+    notice.dataset.tone = state.tone;
+    document.querySelector(`${prefix}-title`).textContent = `${sample ? 'Sample — ' : ''}${state.title}`;
+    document.querySelector(`${prefix}-description`).textContent = state.description;
+    document.querySelector(`${prefix}-demo`).hidden = !sample;
+    for (const tone of ['positive', 'danger', 'warning', 'neutral']) {
+      const icon = document.querySelector(`${prefix}-icon-${tone}`);
+      if (icon) icon.toggleAttribute('hidden', tone !== state.tone);
+    }
+    notice.hidden = false;
+    return state;
+  }
+  function revealRiskNotification(source) {
+    const notice = document.querySelector(`#risk-notification-${source}`);
+    if (!notice || notice.hidden) return;
+    const bounds = notice.getBoundingClientRect();
+    if (bounds.top < 0 || bounds.bottom > window.innerHeight) notice.scrollIntoView({ block: 'nearest' });
+  }
+  for (const source of notificationSources) {
+    document.querySelector(`#risk-notification-${source}-details`)?.addEventListener('click', (event) => {
+      event.preventDefault();
+      output.scrollIntoView({ block: 'start' });
+      // Focus changes only after an explicit request to open the full report.
+      title.focus({ preventScroll: true });
+    });
+  }
+  document.querySelector('#screenshot-input')?.addEventListener('change', () => clearRiskNotification('image'));
+  document.querySelector('#remove-screenshot')?.addEventListener('click', () => clearRiskNotification('image'));
   const riskLabels = new Map([
     ['high concern', 'High Concern'],
+    ['low concern', 'Low Concern'],
     ['needs verification', 'Needs Verification'],
     ['unclear', 'Unclear'],
   ]);
   let busy = false;
   let currentController = null;
-  window.addEventListener('pagehide', () => currentController?.abort());
+  window.addEventListener('pagehide', () => { currentController?.abort(); clearRiskNotification(); });
   submit.disabled = false;
   demoButtons.forEach((button) => { button.disabled = false; });
 
@@ -65,6 +106,7 @@ if (analyzerForm) {
   window.addEventListener('pageshow', updateCounter);
 
   message.addEventListener('input', () => {
+    clearRiskNotification('text');
     updateCounter();
     clearError();
     if (output.dataset.source === 'text') { output.hidden = true; output.dataset.hasResult = 'false'; }
@@ -135,11 +177,13 @@ if (analyzerForm) {
     output.dataset.source = source;
     output.dataset.hasResult = 'true';
     title.textContent = demo ? 'Sample results — mock demo' : source === 'image' ? 'Screenshot analysis' : 'Message analysis';
+    return showRiskNotification(data, demo, source);
   }
 
   analyzerForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (busy || document.querySelector('#text-panel').hidden) return;
+    clearRiskNotification();
     clearError();
     if (!message.value.trim() || message.value.length > 5000) {
       error.textContent = message.value.trim() ? 'Keep your message within 5,000 characters.' : 'Paste a message before starting the analysis.';
@@ -153,6 +197,7 @@ if (analyzerForm) {
 
   async function analyzeRequest(payload) {
     if (busy) return;
+    clearRiskNotification();
     const source = payload.image ? 'image' : 'text';
     const activeError = source === 'image' ? document.querySelector('#screenshot-error') : error;
     const activeStatus = source === 'image' ? document.querySelector('#screenshot-status') : status;
@@ -203,10 +248,11 @@ if (analyzerForm) {
         if (failure.name === 'AbortError') throw failure;
         throw new Error('The analysis service did not return valid JSON. Please try again.');
       }
-      render(validateResponse(data), false, source);
-      activeStatus.textContent = 'Analysis complete. Review the results below.';
+      const notice = render(validateResponse(data), false, source);
+      activeStatus.textContent = `Analysis complete. ${notice.title}.`;
     } catch (failure) {
       output.hidden = true;
+      clearRiskNotification();
       activeError.textContent = failure.name === 'AbortError'
         ? 'The analysis request timed out. Please try again.'
         : failure instanceof TypeError
@@ -218,7 +264,7 @@ if (analyzerForm) {
       window.clearTimeout(timeout);
       currentController = null;
       setBusy(false, source);
-      if (!output.hidden) title.focus();
+      if (!output.hidden) revealRiskNotification(source);
     }
   }
 
@@ -233,6 +279,7 @@ if (analyzerForm) {
 
   demoButtons.forEach((button) => button.addEventListener('click', () => {
     if (busy) return;
+    clearRiskNotification();
     clearError();
     render({
       riskLevel: button.dataset.demo,
@@ -243,6 +290,6 @@ if (analyzerForm) {
       analysisMode: 'mock',
     }, true);
     status.textContent = 'Mock demo displayed. No message was sent or analyzed.';
-    title.focus();
+    revealRiskNotification('text');
   }));
 }

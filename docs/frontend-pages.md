@@ -33,7 +33,7 @@ homepage styles. The navbar uses root-relative section links so it can be reused
 on future pages before their dedicated navigation is introduced.
 
 Screenshot analysis is now available through `POST /api/analyze-image`, multipart
-field `image`. Local English OCR feeds the existing rule-based pipeline. The
+field `image`. Local English OCR feeds the existing text pipeline (local rules by default, or the configured Gemma adapter). The
 server passes `imageAnalysisAvailable` into the EJS view; image submission stays
 disabled if its language data is missing. Selection itself never uploads.
 The shared frontend request/renderer in `main.js` handles both text and image

@@ -1,110 +1,67 @@
-/**
- * Placeholder analysis service.
- * Currently implements a simple rule‑based scam detection prototype.
- * When a real Gemma 4 runtime is integrated, replace the implementation
- * but keep the same exported function signature.
- */
+/** Text analysis using a configured Gemma-compatible JSON adapter or local rules. */
+const isText = value => typeof value === 'string' && value.trim().length > 0;
+const { PROVIDER_LEVELS: riskLevels } = require('./riskClassification');
+const ruleAnalysis = require('./ruleAnalysisService');
 
-/**
- * Analyze a message and return a structured result.
- * The returned object matches the contract described in the spec.
- *
- * @param {string} message – the user‑submitted text to analyse
- * @returns {Promise<Object>} analysis result
- */
-async function analyze(message) {
-  // If Gemma 4 credentials are provided, attempt real inference.
-  // Expected env vars: GEMMA_API_KEY and GEMMA_API_URL (the endpoint that accepts a POST with JSON { message }).
-  // The provider must return a JSON payload matching our contract.
-  let useGemma = process.env.GEMMA_API_KEY && process.env.GEMMA_API_URL;
-
-  if (useGemma) {
-    if (typeof fetch === 'function') {
-      try {
-        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timeout = setTimeout(() => {
-          if (controller) controller.abort();
-        }, 5000);
-        const resp = await fetch(process.env.GEMMA_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.GEMMA_API_KEY}`
-          },
-          body: JSON.stringify({ message }),
-          signal: controller ? controller.signal : undefined
-        });
-        clearTimeout(timeout);
-        if (!resp.ok) throw new Error(`Gemma API error ${resp.status}`);
-        let data;
-        try {
-          data = await resp.json();
-        } catch (e) {
-          throw new Error('Invalid JSON from Gemma');
-        }
-        const required = ['riskLevel', 'riskScore', 'summary', 'indicators', 'recommendedActions', 'uncertainty'];
-        const hasAll = required.every(f => f in data);
-        if (hasAll) {
-          return { ...data, analysisMode: 'gemma-4' };
-        }
-      } catch (e) {
-        console.error('Gemma inference failed:', e);
-      }
-    }
-    // Force fallback mode
-    useGemma = false;
+function normalizeProviderResponse(payload, message) {
+  // Accept the adapter's direct contract and its known single-level envelopes.
+  const data = payload?.riskLevel !== undefined ? payload : payload?.analysis || payload?.data;
+  if (!data || typeof data !== 'object' || !isText(data.riskLevel) ||
+      !riskLevels.has(data.riskLevel.trim().toLowerCase()) || !isText(data.summary) ||
+      !Array.isArray(data.indicators) || !Array.isArray(data.recommendedActions) ||
+      !data.recommendedActions.every(isText)) throw new Error('Invalid analysis contract');
+  const indicators = data.indicators.map(item => {
+    const type = item?.type ?? item?.title;
+    if (!isText(type) || !isText(item.evidence) || !isText(item.explanation) ||
+        !message.toLowerCase().includes(item.evidence.toLowerCase())) throw new Error('Invalid evidence');
+    return { type, evidence: item.evidence, explanation: item.explanation };
+  });
+  const riskLevel = riskLevels.get(data.riskLevel.trim().toLowerCase());
+  if (riskLevel === 'low concern' && (indicators.length || ruleAnalysis.analyze(message).riskLevel === 'high concern')) {
+    throw new Error('Contradictory low-concern findings');
   }
-
-  // ---------- Rule‑based fallback (existing implementation) ----------
-  // Simple keyword‑based heuristics (demo only)
-  const indicators = [];
-  const lowered = message.toLowerCase();
-
-  const patterns = [
-    { title: 'Urgency', regex: /\b(blocked|expire|deadline|minutes?)\b/i, explanation: 'Pressures the recipient to act quickly.' },
-    { title: 'OTP request', regex: /\b(otp|one[-\s]?time\s?code)\b/i, explanation: 'Attempts to steal one‑time passwords.' },
-    { title: 'Account threat', regex: /\b(account\s?will\s?be\s?blocked|suspend)\b/i, explanation: 'Creates fear about account status.' },
-    { title: 'Verification link', regex: /\bverify\b/i, explanation: 'Tries to lure the user to click a verification link.' }
-  ];
-
-  for (const p of patterns) {
-    if (p.regex.test(lowered)) {
-      const match = message.match(p.regex);
-      indicators.push({
-        type: p.title,
-        evidence: match ? match[0] : p.title,
-        explanation: p.explanation
-      });
-    }
+  let uncertainty = data.uncertainty;
+  if (typeof uncertainty === 'number' && Number.isFinite(uncertainty) && uncertainty >= 0 && uncertainty <= 100) {
+    // Legacy adapters returned a number. Do not portray it as a fraud probability.
+    uncertainty = 'The provider returned a numeric uncertainty measure. It does not verify the sender or establish whether the message is fraudulent.';
   }
-
-  const riskScore = Math.min(100, indicators.length * 25 + Math.floor(message.length / 100));
-  const riskLevel = riskScore >= 75 ? 'high concern' : riskScore >= 40 ? 'needs verification' : 'unclear';
-
-  let summary;
-  if (indicators.length === 0) {
-    summary = 'No obvious scam indicators detected.';
-  } else if (indicators.length === 1) {
-    summary = 'The message contains a potential scam indicator.';
-  } else {
-    summary = 'The message contains multiple potential scam indicators.';
-  }
-
-  const uncertainty = 100 - riskScore;
-
-  const analysis = {
+  if (!isText(uncertainty)) throw new Error('Invalid uncertainty');
+  return {
     riskLevel,
-    summary,
-    indicators,
-    recommendedActions: [
-      'Do not share personal or OTP information.',
-      'Verify the claim using official channels.'
-    ],
-    riskScore,
-    uncertainty,
-    analysisMode: 'rule-based'
-  };  
-  return analysis;
+    summary: data.summary, indicators, recommendedActions: data.recommendedActions,
+    uncertainty, analysisMode: 'gemma-4',
+  };
+}
+
+async function analyze(message) {
+  const configured = Boolean(process.env.GEMMA_API_KEY && process.env.GEMMA_API_URL);
+  let providerFailed = false;
+  if (configured) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(process.env.GEMMA_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GEMMA_API_KEY}` },
+        body: JSON.stringify({ message }), signal: controller.signal,
+      });
+      if (!response.ok) throw new Error('Provider request failed');
+      return normalizeProviderResponse(await response.json(), message);
+    } catch {
+      // Never log provider errors, which may include credentials or submitted text.
+      if (process.env.GEMMA_FALLBACK_ENABLED !== 'true') {
+        const error = 'Configured AI analysis is unavailable. Please try again.';
+        throw Object.assign(new Error(error), { status: 503, isPublic: true, publicMessage: error });
+      }
+      providerFailed = true;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const result = ruleAnalysis.analyze(message);
+  if (providerFailed) result.uncertainty = `Configured Gemma analysis was unavailable; explicitly enabled rule-based fallback was used. ${result.uncertainty}`;
+  return result;
 }
 
 module.exports = { analyze };

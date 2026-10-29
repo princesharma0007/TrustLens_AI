@@ -1,0 +1,15 @@
+<% const noticeId = 'risk-notification-' + source; %>
+<section class="risk-notification" id="<%= noticeId %>" aria-labelledby="<%= noticeId %>-title" aria-describedby="<%= noticeId %>-description" hidden>
+  <span class="risk-notification-icon" aria-hidden="true">
+    <svg id="<%= noticeId %>-icon-positive" width="26" height="28" viewBox="0 0 26 28" fill="none" focusable="false" hidden><path d="M13 2 23 6v8c0 6-4 10-10 12C7 24 3 20 3 14V6L13 2Z" stroke="currentColor" stroke-width="1.7"/><path d="m8.5 13.5 3 3 6-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg id="<%= noticeId %>-icon-danger" width="26" height="28" viewBox="0 0 26 28" fill="none" focusable="false" hidden><path d="M13 2 23 6v8c0 6-4 10-10 12C7 24 3 20 3 14V6L13 2Z" stroke="currentColor" stroke-width="1.7"/><path d="M13 9v6m0 4v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <svg id="<%= noticeId %>-icon-warning" width="28" height="28" viewBox="0 0 28 28" fill="none" focusable="false" hidden><path d="M12.3 4a2 2 0 0 1 3.4 0l10 17a2 2 0 0 1-1.7 3H4a2 2 0 0 1-1.7-3l10-17Z" stroke="currentColor" stroke-width="1.7"/><path d="M14 10v6m0 4v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <svg id="<%= noticeId %>-icon-neutral" width="28" height="28" viewBox="0 0 28 28" fill="none" focusable="false" hidden><circle cx="14" cy="14" r="11" stroke="currentColor" stroke-width="1.7"/><path d="M14 13v6m0-10v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </span>
+  <div class="risk-notification-copy">
+    <p class="risk-notification-demo" id="<%= noticeId %>-demo" hidden>MOCK DEMO · Not an analysis of your message</p>
+    <h3 id="<%= noticeId %>-title"></h3>
+    <p id="<%= noticeId %>-description"></p>
+    <a id="<%= noticeId %>-details" href="#analysis-output">View Detailed Analysis <span aria-hidden="true">→</span></a>
+  </div>
+</section>

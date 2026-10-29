@@ -23,7 +23,8 @@
                 <textarea id="message" name="message" rows="6" maxlength="5000" required aria-describedby="message-help character-count analyzer-error" placeholder="Paste the message that made you pause…"></textarea>
                 <p class="character-count" id="character-count">0 / 5,000 characters</p>
                 <p class="analyzer-error" id="analyzer-error" role="alert" hidden></p>
-                <div class="analyzer-bottom"><p id="analyzer-status" role="status" aria-live="polite">Ready when you are.</p><button class="button" id="analyze-button" type="submit" disabled>Analyze message ↗</button></div>
+                <div class="analyzer-bottom"><p id="analyzer-status" role="status" aria-live="polite" aria-atomic="true">Ready when you are.</p><button class="button" id="analyze-button" type="submit" disabled>Analyze message ↗</button></div>
+                <%- include('partials/risk-notification', { source: 'text' }) %>
                 <noscript><p>Enable JavaScript to analyze a message.</p></noscript>
                 <details class="demo-controls"><summary>Explore sample reports <span class="sample-note">Mock data only</span></summary><p>Fixed samples for UI testing. They do not analyze your message or send it to the server.</p><div class="demo-buttons"><button type="button" data-demo="high concern" disabled>Demo: High Concern</button><button type="button" data-demo="needs verification" disabled>Demo: Needs Verification</button><button type="button" data-demo="unclear" disabled>Demo: Unclear</button></div></details>
               </form>
@@ -36,8 +37,9 @@
               <p class="analyzer-error" id="screenshot-error" role="alert" hidden></p>
               <figure class="screenshot-preview" id="screenshot-preview" hidden><img id="screenshot-image" alt="Preview of the screenshot you selected"><figcaption><span id="screenshot-name"></span><span id="screenshot-size"></span></figcaption></figure>
               <div class="screenshot-actions" id="screenshot-actions" hidden><button class="secondary-button" id="change-screenshot" type="button">Change Image</button><button class="secondary-button" id="remove-screenshot" type="button">Remove Image</button></div>
-              <p class="input-help" id="screenshot-status" role="status" aria-live="polite">Choose a clear screenshot containing English text.</p>
+              <p class="input-help" id="screenshot-status" role="status" aria-live="polite" aria-atomic="true">Choose a clear screenshot containing English text.</p>
               <div class="analyzer-bottom"><p id="screenshot-privacy">Analyze sends this image for local text extraction and rule-based analysis. Images are processed in memory, not saved.</p><button class="button" id="analyze-screenshot" type="button" disabled aria-describedby="screenshot-privacy">Analyze Screenshot</button></div>
+              <%- include('partials/risk-notification', { source: 'image' }) %>
             </section>
           </div>
           <section class="results-panel" id="analysis-output" aria-labelledby="results-title" aria-busy="false" hidden>

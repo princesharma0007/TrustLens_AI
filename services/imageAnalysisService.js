@@ -48,7 +48,7 @@ async function analyze(buffer, { signal } = {}) {
     const analysis = await gemmaService.analyze(text);
     return {
       ...analysis,
-      analysisMode: 'ocr + rule-based',
+      analysisMode: `ocr + ${analysis.analysisMode}`,
       uncertainty: `${analysis.uncertainty} Text was extracted using local English OCR, which can miss or misread words. Review the screenshot and verify independently.`,
     };
   } finally {

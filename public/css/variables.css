@@ -23,6 +23,15 @@
   --safety-ink: #116e58;
   --safety-surface: #ecfdf5;
   --neutral: #475467;
+  --notice-positive-bg: #ecfdf3;
+  --notice-positive-border: #abefc6;
+  --notice-positive-text: #067647;
+  --notice-danger-bg: #fef3f2;
+  --notice-danger-border: #fecdca;
+  --notice-danger-text: #b42318;
+  --notice-warning-bg: #fffaeb;
+  --notice-warning-border: #fedf89;
+  --notice-warning-text: #b54708;
   --shadow: 0 4px 20px rgb(15 23 42 / 3%);
   --space-1: 8px;
   --space-2: 16px;

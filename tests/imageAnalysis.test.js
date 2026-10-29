@@ -24,7 +24,7 @@ test.each(['png', 'jpeg', 'webp'])('decodes genuine %s and returns actual rule-b
   expect(res.headers['cache-control']).toBe('no-store');
   expect(res.body.analysisMode).toBe('ocr + rule-based');
   expect(res.body.riskLevel).toBe('high concern');
-  expect(res.body.indicators).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'OTP request', evidence: 'OTP' })]));
+  expect(res.body.indicators).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'OTP request', evidence: expect.stringContaining('Share your OTP') })]));
   expect(res.body.uncertainty).toContain('misread');
   expect(Object.keys(res.body).sort()).toEqual(['riskLevel', 'summary', 'indicators', 'recommendedActions', 'uncertainty', 'analysisMode'].sort());
   expect(ocr.extractText).toHaveBeenCalledTimes(1);
@@ -68,7 +68,7 @@ test.each([{ text: '', confidence: 0 }, { text: 'unreadable', confidence: 10 }])
   expect(res.body.error).toContain('No clear English text');
 });
 test('supports messages longer than the text form limit without truncation', async () => {
-  ocr.extractText.mockResolvedValue({ text: 'word '.repeat(1100) + ' OTP', confidence: 95 });
+  ocr.extractText.mockResolvedValue({ text: 'word '.repeat(1100) + ' Share your OTP.', confidence: 95 });
   const res = await postImage(images.png).expect(200);
   expect(res.body.indicators.some(item => item.type === 'OTP request')).toBe(true);
 });
@@ -121,4 +121,15 @@ test('homepage enables screenshot analysis only when local OCR is installed', as
   jest.spyOn(ocr, 'isAvailable').mockReturnValue(false);
   const unavailable = await request(app).get('/').expect(200);
   expect(unavailable.text).toContain('data-analysis-available="false"');
+});
+
+test('OCR preserves genuine configured Gemma mode instead of claiming rule-based processing', async () => {
+  jest.spyOn(require('../services/gemmaService'), 'analyze').mockResolvedValue({
+    riskLevel: 'needs verification', summary: 'A verification request needs context.',
+    indicators: [], recommendedActions: ['Verify independently.'],
+    uncertainty: 'Sender identity remains unverified.', analysisMode: 'gemma-4',
+  });
+  const res = await postImage(images.png).expect(200);
+  expect(res.body.analysisMode).toBe('ocr + gemma-4');
+  expect(res.body.uncertainty).toContain('OCR');
 });
