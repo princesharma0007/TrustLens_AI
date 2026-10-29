@@ -60,3 +60,22 @@ test('provider low classification with warning findings is rejected', async () =
   global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ riskLevel: 'low concern', summary: 'Routine.', indicators: [{ type: 'Warning', evidence: 'Hi', explanation: 'A warning.' }], recommendedActions: [], uncertainty: 'Not verified.' }) });
   await expect(service.analyze('Hi, see you at lunch tomorrow.')).rejects.toMatchObject({ status: 503 });
 });
+
+test.each([
+  ['Never share your OTP\nEnter your PIN to receive a refund.', LEVELS.HIGH, 'Credential request'],
+  ['Never\nshare your OTP. Use the official bank app.', LEVELS.LOW, null],
+  ['Retail offer: 20% off at rb.gy/demo', LEVELS.MEDIUM, 'Shortened link'],
+  ['Retail sale! Up to 60% off. Shop bit.ly/SaleDemo. You only have 2 days!', LEVELS.MEDIUM, 'Shortened link'],
+  ['Retail sale! Up to 60% off in our store this weekend.', LEVELS.LOW, null],
+  ['Fashion discount: 40% off at https://tinyurl.com/demo', LEVELS.MEDIUM, 'Shortened link'],
+  ['Sale ends today! See shop.example.com/sale', LEVELS.MEDIUM, 'Unverified link'],
+  ['Share your\nOTP to prevent account suspension.', LEVELS.HIGH, 'OTP request'],
+  ['Transfer\nINR 500 immediately to restore your account.', LEVELS.HIGH, 'Payment request'],
+  ['SBI notice: your account will be blocked. Visit kyc-check.example.in/update', LEVELS.HIGH, 'Authority and link pressure'],
+  ['Up to 60% off.', LEVELS.UNKNOWN, null],
+])('promotions, bare links and OCR wrapping: %s', (text, level, indicator) => {
+  const result = rules.analyze(text);
+  expect(result.riskLevel).toBe(level);
+  if (indicator) expect(result.indicators.some(item => item.type === indicator)).toBe(true);
+  result.indicators.forEach(item => expect(text).toContain(item.evidence));
+});

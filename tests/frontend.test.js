@@ -29,7 +29,7 @@ class TestFormData {
 let nodes, browser, fetchMock;
 beforeEach(() => {
   jest.useFakeTimers();
-  const ids = ['analyzer-form', 'message', 'character-count', 'analyzer-error', 'analyzer-status', 'analyze-button', 'analysis-output', 'analysis-skeleton', 'analysis-results', 'results-title', 'risk-level', 'analysis-mode', 'result-summary', 'result-uncertainty', 'result-indicators', 'result-actions', 'text-panel', 'screenshot-error', 'screenshot-status'];
+  const ids = ['analyzer-form', 'message', 'character-count', 'analyzer-error', 'analyzer-status', 'analyze-button', 'analysis-output', 'analysis-skeleton', 'analysis-results', 'results-title', 'risk-level', 'analysis-mode', 'result-summary', 'result-uncertainty', 'result-indicators', 'result-actions', 'text-panel', 'screenshot-error', 'screenshot-status', 'extracted-text', 'extracted-text-content'];
   for (const source of ['text', 'image']) {
     const prefix = `risk-notification-${source}`;
     ids.push(prefix, `${prefix}-title`, `${prefix}-description`, `${prefix}-demo`, `${prefix}-details`, ...['positive', 'danger', 'warning', 'neutral'].map(tone => `${prefix}-icon-${tone}`));
@@ -240,4 +240,25 @@ test.each([
   await nodes['#analyzer-form'].events.submit({ preventDefault() {} });
   expect(nodes['#risk-notification-text'].hidden).toBe(true);
   expect(nodes['#analyzer-error'].hidden).toBe(false);
+});
+
+test('screenshot extracted text is safe, collapsed, and cleared on the next text result', async () => {
+  const extractedText = '<img src=x onerror=alert(1)>\nShop bit.ly/demo';
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ...data, extractedText, ocrConfidence: 94 }) });
+  await browser.TrustLensAnalysis.analyzeImage(new TestFile());
+  expect(nodes['#extracted-text'].hidden).toBe(false);
+  expect(nodes['#extracted-text'].open).toBe(false);
+  expect(nodes['#extracted-text-content'].textContent).toBe(extractedText);
+  nodes['#extracted-text'].open = true;
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => data });
+  nodes['#message'].value = 'A new text message';
+  await nodes['#analyzer-form'].events.submit({ preventDefault() {} });
+  expect(nodes['#extracted-text'].hidden).toBe(true);
+  expect(nodes['#extracted-text-content'].textContent).toBe('');
+});
+test.each([{ extractedText: 42 }, { extractedText: '' }, { ocrConfidence: 10 }, { ocrConfidence: 101 }])('rejects malformed optional OCR fields', async fields => {
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ...data, ...fields }) });
+  await browser.TrustLensAnalysis.analyzeImage(new TestFile());
+  expect(nodes['#analysis-output'].hidden).toBe(true);
+  expect(nodes['#risk-notification-image'].hidden).toBe(true);
 });

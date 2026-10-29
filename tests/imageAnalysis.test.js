@@ -26,7 +26,7 @@ test.each(['png', 'jpeg', 'webp'])('decodes genuine %s and returns actual rule-b
   expect(res.body.riskLevel).toBe('high concern');
   expect(res.body.indicators).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'OTP request', evidence: expect.stringContaining('Share your OTP') })]));
   expect(res.body.uncertainty).toContain('misread');
-  expect(Object.keys(res.body).sort()).toEqual(['riskLevel', 'summary', 'indicators', 'recommendedActions', 'uncertainty', 'analysisMode'].sort());
+  expect(Object.keys(res.body).sort()).toEqual(['riskLevel', 'summary', 'indicators', 'recommendedActions', 'uncertainty', 'analysisMode', 'extractedText', 'ocrConfidence'].sort());
   expect(ocr.extractText).toHaveBeenCalledTimes(1);
 });
 
@@ -132,4 +132,31 @@ test('OCR preserves genuine configured Gemma mode instead of claiming rule-based
   const res = await postImage(images.png).expect(200);
   expect(res.body.analysisMode).toBe('ocr + gemma-4');
   expect(res.body.uncertainty).toContain('OCR');
+});
+
+test.each([
+  ['Retail sale! Up to 60% off.\nShop: bit.ly/SaleDemo\nYou only have 2 days!', 'needs verification'],
+  ['Rs. 500 was debited from your account.', 'low concern'],
+  ['Share your\nOTP to prevent account suspension.', 'high concern'],
+  ['College announcement: lectures start tomorrow in Room 204.', 'low concern'],
+])('passes the exact OCR output to classification and returns inspectable text: %s', async (text, level) => {
+  ocr.extractText.mockResolvedValue({ text, confidence: 94 });
+  const res = await postImage(images.png).expect(200);
+  expect(res.body.riskLevel).toBe(level);
+  expect(res.body.extractedText).toBe(text);
+  expect(res.body.ocrConfidence).toBe(94);
+  for (const item of res.body.indicators) expect(text).toContain(item.evidence);
+});
+test.each([
+  { text: '', confidence: 95 }, { text: 'Retail sale', confidence: 20 },
+  { text: '???', confidence: 90 }, { text: 'Retail sale', confidence: NaN },
+  { text: 'Retail sale', confidence: 101 }, null,
+])('unreliable extraction never reaches risk analysis', async extraction => {
+  ocr.extractText.mockResolvedValue(extraction);
+  const analyze = jest.spyOn(require('../services/gemmaService'), 'analyze');
+  const res = await postImage(images.png).expect(422);
+  expect(res.body.error).toContain('No clear English text');
+  expect(res.body).not.toHaveProperty('riskLevel');
+  expect(res.body).not.toHaveProperty('extractedText');
+  expect(analyze).not.toHaveBeenCalled();
 });

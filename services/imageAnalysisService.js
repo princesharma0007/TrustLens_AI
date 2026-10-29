@@ -40,14 +40,16 @@ async function analyze(buffer, { signal } = {}) {
     }
     if (signal?.aborted) throw publicError(408, 'Screenshot analysis was cancelled.');
     const result = await ocr.extractText(normalized, { signal });
-    const text = typeof result.text === 'string' ? result.text.trim() : '';
-    if (!Number.isFinite(result.confidence) || result.confidence < 45 || (text.match(/[a-z0-9]/gi) || []).length < 3) {
+    const text = typeof result?.text === 'string' ? result.text.trim() : '';
+    if (!Number.isFinite(result?.confidence) || result.confidence < 45 || result.confidence > 100 || (text.match(/[a-z0-9]/gi) || []).length < 3) {
       throw publicError(422, 'No clear English text could be read. Crop or sharpen the screenshot, or paste the message.');
     }
     if (result.truncated || text.length > 20000) throw publicError(422, 'The screenshot contains too much text. Crop it to one message and try again.');
     const analysis = await gemmaService.analyze(text);
     return {
       ...analysis,
+      extractedText: text,
+      ocrConfidence: result.confidence,
       analysisMode: `ocr + ${analysis.analysisMode}`,
       uncertainty: `${analysis.uncertainty} Text was extracted using local English OCR, which can miss or misread words. Review the screenshot and verify independently.`,
     };

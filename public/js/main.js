@@ -131,7 +131,9 @@ if (analyzerForm) {
         !isText(data.summary) || !isText(data.uncertainty) || !isText(data.analysisMode) ||
         !Array.isArray(data.indicators) || !Array.isArray(data.recommendedActions) ||
         !data.indicators.every((item) => item && isText(item.type) && isText(item.evidence) && isText(item.explanation)) ||
-        !data.recommendedActions.every(isText)) {
+        !data.recommendedActions.every(isText) ||
+        (data.extractedText !== undefined && (!isText(data.extractedText) || data.extractedText.length > 20000)) ||
+        (data.ocrConfidence !== undefined && (!Number.isFinite(data.ocrConfidence) || data.ocrConfidence < 45 || data.ocrConfidence > 100))) {
       throw new Error('The analysis service returned an unexpected or incomplete response. Please try again.');
     }
     return data;
@@ -156,6 +158,10 @@ if (analyzerForm) {
       : data.analysisMode === 'rule-based'
         ? 'Rule-based prototype — not Gemma AI analysis'
         : `Analysis mode reported by service: ${data.analysisMode}`;
+    const extraction = document.querySelector('#extracted-text');
+    extraction.open = false;
+    extraction.hidden = source !== 'image' || demo || !isText(data.extractedText);
+    document.querySelector('#extracted-text-content').textContent = extraction.hidden ? '' : data.extractedText;
     document.querySelector('#result-summary').textContent = data.summary;
     document.querySelector('#result-uncertainty').textContent = data.uncertainty;
     const indicators = document.querySelector('#result-indicators');
