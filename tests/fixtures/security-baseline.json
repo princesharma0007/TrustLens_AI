@@ -1,0 +1,109 @@
+{
+  "commit": "79268e6dfa7564ac0042027e6ecdecf76b9e6577",
+  "rows": [
+    {
+      "id": "pnb-alert",
+      "before": "needs verification"
+    },
+    {
+      "id": "simple-debit",
+      "before": "low concern"
+    },
+    {
+      "id": "protective-alert",
+      "before": "low concern"
+    },
+    {
+      "id": "college",
+      "before": "low concern"
+    },
+    {
+      "id": "personal",
+      "before": "low concern"
+    },
+    {
+      "id": "sbi-otp",
+      "before": "high concern"
+    },
+    {
+      "id": "internship-fee",
+      "before": "high concern"
+    },
+    {
+      "id": "upi-refund",
+      "before": "high concern"
+    },
+    {
+      "id": "delivery-link",
+      "before": "needs verification"
+    },
+    {
+      "id": "vague",
+      "before": "unclear"
+    },
+    {
+      "id": "account-verification",
+      "before": "needs verification"
+    },
+    {
+      "id": "reactivation-payment",
+      "before": "high concern"
+    },
+    {
+      "id": "security-advice",
+      "before": "low concern"
+    },
+    {
+      "id": "ordinary-reminder",
+      "before": "low concern"
+    },
+    {
+      "id": "urgency-only",
+      "before": "unclear"
+    },
+    {
+      "id": "government-link",
+      "before": "high concern"
+    },
+    {
+      "id": "retail-no-link",
+      "before": "low concern"
+    },
+    {
+      "id": "short-promotion",
+      "before": "needs verification"
+    },
+    {
+      "id": "hindi-otp",
+      "before": "unclear"
+    },
+    {
+      "id": "hindi-pin",
+      "before": "unclear"
+    },
+    {
+      "id": "unknown-url",
+      "before": "needs verification"
+    },
+    {
+      "id": "lookalike",
+      "before": "needs verification"
+    },
+    {
+      "id": "malicious-looking",
+      "before": "high concern"
+    },
+    {
+      "id": "multi-unrelated",
+      "before": "high concern"
+    },
+    {
+      "id": "wrapped-otp",
+      "before": "high concern"
+    },
+    {
+      "id": "credit",
+      "before": "low concern"
+    }
+  ]
+}

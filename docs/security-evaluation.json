@@ -1,0 +1,194 @@
+{
+  "dataset": "26 development cases; not a held-out fraud benchmark",
+  "positiveLabel": "needs verification OR high concern (review warranted, not confirmed fraud)",
+  "binaryExclusions": "expected unclear; predicted unclear counts as negative, including a false negative for review-positive cases",
+  "baselineCommit": "79268e6dfa7564ac0042027e6ecdecf76b9e6577",
+  "before": {
+    "samples": 26,
+    "binarySamples": 24,
+    "tp": 14,
+    "fp": 0,
+    "fn": 2,
+    "tn": 8,
+    "precision": 1,
+    "recall": 0.875,
+    "f1": 0.9333,
+    "falsePositiveRate": 0,
+    "falseNegativeRate": 0.125,
+    "exactCategoryMatches": 23,
+    "unclearPredictions": 4
+  },
+  "after": {
+    "samples": 26,
+    "binarySamples": 24,
+    "tp": 16,
+    "fp": 0,
+    "fn": 0,
+    "tn": 8,
+    "precision": 1,
+    "recall": 1,
+    "f1": 1,
+    "falsePositiveRate": 0,
+    "falseNegativeRate": 0,
+    "exactCategoryMatches": 26,
+    "unclearPredictions": 2
+  },
+  "rows": [
+    {
+      "id": "pnb-alert",
+      "expected": "needs verification",
+      "before": "needs verification",
+      "after": "needs verification"
+    },
+    {
+      "id": "simple-debit",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    },
+    {
+      "id": "protective-alert",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    },
+    {
+      "id": "college",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    },
+    {
+      "id": "personal",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    },
+    {
+      "id": "sbi-otp",
+      "expected": "high concern",
+      "before": "high concern",
+      "after": "high concern"
+    },
+    {
+      "id": "internship-fee",
+      "expected": "high concern",
+      "before": "high concern",
+      "after": "high concern"
+    },
+    {
+      "id": "upi-refund",
+      "expected": "high concern",
+      "before": "high concern",
+      "after": "high concern"
+    },
+    {
+      "id": "delivery-link",
+      "expected": "needs verification",
+      "before": "needs verification",
+      "after": "needs verification"
+    },
+    {
+      "id": "vague",
+      "expected": "unclear",
+      "before": "unclear",
+      "after": "unclear"
+    },
+    {
+      "id": "account-verification",
+      "expected": "needs verification",
+      "before": "needs verification",
+      "after": "needs verification"
+    },
+    {
+      "id": "reactivation-payment",
+      "expected": "high concern",
+      "before": "high concern",
+      "after": "high concern"
+    },
+    {
+      "id": "security-advice",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    },
+    {
+      "id": "ordinary-reminder",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    },
+    {
+      "id": "urgency-only",
+      "expected": "unclear",
+      "before": "unclear",
+      "after": "unclear"
+    },
+    {
+      "id": "government-link",
+      "expected": "high concern",
+      "before": "high concern",
+      "after": "high concern"
+    },
+    {
+      "id": "retail-no-link",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    },
+    {
+      "id": "short-promotion",
+      "expected": "needs verification",
+      "before": "needs verification",
+      "after": "needs verification"
+    },
+    {
+      "id": "hindi-otp",
+      "expected": "high concern",
+      "before": "unclear",
+      "after": "high concern"
+    },
+    {
+      "id": "hindi-pin",
+      "expected": "high concern",
+      "before": "unclear",
+      "after": "high concern"
+    },
+    {
+      "id": "unknown-url",
+      "expected": "needs verification",
+      "before": "needs verification",
+      "after": "needs verification"
+    },
+    {
+      "id": "lookalike",
+      "expected": "needs verification",
+      "before": "needs verification",
+      "after": "needs verification"
+    },
+    {
+      "id": "malicious-looking",
+      "expected": "high concern",
+      "before": "high concern",
+      "after": "high concern"
+    },
+    {
+      "id": "multi-unrelated",
+      "expected": "needs verification",
+      "before": "high concern",
+      "after": "needs verification"
+    },
+    {
+      "id": "wrapped-otp",
+      "expected": "high concern",
+      "before": "high concern",
+      "after": "high concern"
+    },
+    {
+      "id": "credit",
+      "expected": "low concern",
+      "before": "low concern",
+      "after": "low concern"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+const urls = require('../services/urlAnalysisService');
+let saved, originalFetch;
+beforeEach(() => { saved = [process.env.URL_REPUTATION_ENABLED, process.env.GOOGLE_WEB_RISK_API_KEY]; delete process.env.URL_REPUTATION_ENABLED; delete process.env.GOOGLE_WEB_RISK_API_KEY; originalFetch = global.fetch; urls.reset(); });
+afterEach(() => { ['URL_REPUTATION_ENABLED', 'GOOGLE_WEB_RISK_API_KEY'].forEach((key, i) => { if (saved[i] === undefined) delete process.env[key]; else process.env[key] = saved[i]; }); global.fetch = originalFetch; jest.useRealTimers(); jest.restoreAllMocks(); });
+function configure() { process.env.URL_REPUTATION_ENABLED = 'true'; process.env.GOOGLE_WEB_RISK_API_KEY = 'private-test-key'; }
+test.each(['http://127.0.0.1/x', 'http://2130706433/', 'http://0x7f000001/', 'http://[::1]/', 'http://[::ffff:127.0.0.1]/', 'https://localhost/a', 'https://bank.internal/a', 'https://user:secret@public.com/'])('never sends internal/credential URLs to a remote service: %s', async text => { configure();global.fetch = jest.fn(); const findings = await urls.analyzeUrls(text);expect(findings[0].provider).toBe('none');expect(global.fetch).not.toHaveBeenCalled(); });
+test('missing configuration is unknown, with no network', async () => { global.fetch = jest.fn(); const [finding] = await urls.analyzeUrls('https://retailer.com/');expect(finding.status).toBe('unknown');expect(global.fetch).not.toHaveBeenCalled(); });
+test.each(['https://paypal.com.attacker.com/', 'https://paypa1.com/', 'https://xn--pple-43d.com/', 'bit.ly/offer'])('structural signal without claiming known malware: %s', async text => { expect((await urls.analyzeUrls(text))[0].status).toBe('suspicious'); });
+test('successful empty provider response is no_known_threat, not safe', async () => { configure();global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });const [finding] = await urls.analyzeUrls('https://retailer.com/');expect(finding.status).toBe('no_known_threat');const [endpoint, options] = global.fetch.mock.calls[0];expect(new URL(endpoint).origin).toBe('https://webrisk.googleapis.com');expect(endpoint).not.toContain('private-test-key');expect(options.headers['x-goog-api-key']).toBe('private-test-key');expect(options.redirect).toBe('error'); });
+test('threat matches are validated and cached until expiry', async () => { configure();jest.useFakeTimers();const payload = { threat: { threatTypes: ['MALWARE'], expireTime: new Date(Date.now() + 1000).toISOString() } };global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => payload });expect((await urls.analyzeUrls('https://bad.com/'))[0].status).toBe('known_malicious');await urls.analyzeUrls('https://bad.com/');expect(global.fetch).toHaveBeenCalledTimes(1);jest.advanceTimersByTime(1001);await urls.analyzeUrls('https://bad.com/');expect(global.fetch).toHaveBeenCalledTimes(2); });
+test.each([null, [], { error: 'private' }, { threat: { threatTypes: [] } }])('malformed provider output is unknown', async payload => { configure();global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => payload });expect((await urls.analyzeUrls('https://retailer.com/'))[0].status).toBe('unknown'); });
+test('provider failure cannot expose secrets or become no_known_threat', async () => { configure();global.fetch = jest.fn().mockRejectedValue(new Error('private-test-key'));const result = await urls.analyzeUrls('https://retailer.com/');expect(result[0].status).toBe('unknown');expect(JSON.stringify(result)).not.toContain('private-test-key'); });
+test('provider redirects fail closed without requesting the target', async () => { configure();global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 302 });expect((await urls.analyzeUrls('https://retailer.com/'))[0].status).toBe('unknown');expect(global.fetch).toHaveBeenCalledTimes(1); });
+test('timeout includes provider response body', async () => { configure();jest.useFakeTimers();global.fetch = jest.fn().mockImplementation(async (url, options) => ({ ok: true, json: () => new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('timeout')))) }));const pending = urls.analyzeUrls('https://retailer.com/');await Promise.resolve();jest.advanceTimersByTime(2500);expect((await pending)[0].status).toBe('unknown'); });
+test('remote requests are bounded per message and minute', async () => { configure();global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });const text = Array.from({ length: 12 }, (_, i) => `https://host${i}.com/`).join(' ');await urls.analyzeUrls(text);expect(global.fetch).toHaveBeenCalledTimes(8);await urls.analyzeUrls(text);await urls.analyzeUrls(text);expect(global.fetch).toHaveBeenCalledTimes(20); });
+test('too many links are rejected rather than silently ignored', async () => {
+  await expect(urls.analyzeUrls(Array.from({ length: 33 }, (_, i) => `https://host${i}.com/`).join(' '))).rejects.toMatchObject({ status: 422 });
+});
+test('real text API promotes a stubbed valid threat-list match and preserves contract', async () => {
+  configure();
+  jest.spyOn(require('../services/gemmaService'), 'analyze').mockImplementation(async text => require('../services/ruleAnalysisService').analyze(text));
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ threat: { threatTypes: ['SOCIAL_ENGINEERING'], expireTime: new Date(Date.now() + 60000).toISOString() } }) });
+  const app = require('../server'); app.locals.textRateLimitStore.resetAll();
+  const response = await require('supertest')(app).post('/api/analyze').send({ message: 'Please see https://malware-demo.com/notice' }).expect(200);
+  expect(response.body.riskLevel).toBe('high concern');
+  expect(response.body.urlFindings[0].status).toBe('known_malicious');
+  expect(response.body.analysisMode).toBe('rule-based');
+  expect(JSON.stringify(response.body)).not.toContain('private-test-key');
+});

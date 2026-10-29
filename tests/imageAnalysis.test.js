@@ -26,7 +26,7 @@ test.each(['png', 'jpeg', 'webp'])('decodes genuine %s and returns actual rule-b
   expect(res.body.riskLevel).toBe('high concern');
   expect(res.body.indicators).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'OTP request', evidence: expect.stringContaining('Share your OTP') })]));
   expect(res.body.uncertainty).toContain('misread');
-  expect(Object.keys(res.body).sort()).toEqual(['riskLevel', 'summary', 'indicators', 'recommendedActions', 'uncertainty', 'analysisMode', 'extractedText', 'ocrConfidence'].sort());
+  expect(Object.keys(res.body).sort()).toEqual(['riskLevel', 'summary', 'indicators', 'recommendedActions', 'uncertainty', 'analysisMode', 'extractedText', 'ocrConfidence', 'textExtractionStatus'].sort());
   expect(ocr.extractText).toHaveBeenCalledTimes(1);
 });
 
@@ -66,6 +66,7 @@ test.each([{ text: '', confidence: 0 }, { text: 'unreadable', confidence: 10 }])
   ocr.extractText.mockResolvedValue(result);
   const res = await postImage(images.png).expect(422);
   expect(res.body.error).toContain('No clear English text');
+  expect(res.body.textExtractionStatus).toBe('insufficient');
 });
 test('supports messages longer than the text form limit without truncation', async () => {
   ocr.extractText.mockResolvedValue({ text: 'word '.repeat(1100) + ' Share your OTP.', confidence: 95 });
@@ -145,7 +146,7 @@ test.each([
   expect(res.body.riskLevel).toBe(level);
   expect(res.body.extractedText).toBe(text);
   expect(res.body.ocrConfidence).toBe(94);
-  for (const item of res.body.indicators) expect(text).toContain(item.evidence);
+  for (const item of res.body.indicators) expect(require('../services/analysisService').normalizeText(text)).toContain(item.evidence);
 });
 test.each([
   { text: '', confidence: 95 }, { text: 'Retail sale', confidence: 20 },
@@ -156,6 +157,7 @@ test.each([
   const analyze = jest.spyOn(require('../services/gemmaService'), 'analyze');
   const res = await postImage(images.png).expect(422);
   expect(res.body.error).toContain('No clear English text');
+  expect(res.body.textExtractionStatus).toBe('insufficient');
   expect(res.body).not.toHaveProperty('riskLevel');
   expect(res.body).not.toHaveProperty('extractedText');
   expect(analyze).not.toHaveBeenCalled();

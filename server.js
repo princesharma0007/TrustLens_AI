@@ -71,7 +71,8 @@ app.use((err, req, res, next) => {
 
   return res.status(status).json({
     success: false,
-    error: message
+    error: message,
+    ...(err.isPublic && err.textExtractionStatus === 'insufficient' ? { textExtractionStatus: 'insufficient' } : {}),
   });
 });
 

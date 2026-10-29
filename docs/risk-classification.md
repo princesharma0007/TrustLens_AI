@@ -4,6 +4,11 @@ Canonical categories and precedence live in services/riskClassification.js.
 The rule engine uses bounded phrases and action relationships, not keyword counts,
 message length, confidence scores, bank names, amounts, or phone numbers alone.
 
+Current normalization, independent-block handling, selected Hindi patterns, and
+optional URL intelligence are documented in [the upgrade guide](analysis-upgrade.md).
+The evaluation below records the earlier 16-case milestone; current 26-case
+results are in `security-evaluation.json`.
+
 ## Criteria
 
 - High concern: a request to disclose/enter credentials; an employment offer paired

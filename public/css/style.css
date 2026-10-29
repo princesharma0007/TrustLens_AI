@@ -297,3 +297,9 @@ textarea[aria-invalid="true"], .screenshot-input[aria-invalid="true"] { border-c
 .extracted-text summary { cursor: pointer; font-weight: 650; font-size: 13px; }
 .extracted-text > p { font-size: 12px; color: var(--neutral); margin-block: 12px; }
 .extracted-text pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 13px; line-height: 1.7; max-height: 20rem; overflow-y: auto; margin: 0; }
+
+#url-findings-section { margin-block: 20px; overflow-wrap: anywhere; }
+#url-findings { padding-left: 20px; font-size: 12px; }
+#url-findings li { margin-block: 12px; }
+#url-findings p { margin-block: 4px; }
+#review-extracted-text { margin-top: 12px; }

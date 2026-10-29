@@ -4,7 +4,9 @@
 
 The multipart image route decodes and normalizes the image in memory, performs
 local English Tesseract OCR, validates extraction quality, and passes the trimmed
-text directly to the same analysis service used by the text endpoint. It never
+text through the same canonical normalization and analysis service used by the
+text endpoint. See [the upgrade guide](analysis-upgrade.md) for current layout,
+correction and optional reputation behavior. It never
 visits URLs. No image or extracted text is logged or saved by application code.
 The response has Cache-Control: no-store.
 

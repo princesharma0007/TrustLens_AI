@@ -1,0 +1,132 @@
+[
+  {
+    "id": "pnb-alert",
+    "expected": "needs verification",
+    "message": "A/c X5559 debited INR 61.00 Dt 29-10-26 13:58:38 to Vipin Kumar thru UPI:256659876457. Bal INR 117.53 Not u? Fwd this SMS to 9264092640 to block UPI.-PNB"
+  },
+  {
+    "id": "simple-debit",
+    "expected": "low concern",
+    "message": "Rs. 500 was debited from your account."
+  },
+  {
+    "id": "protective-alert",
+    "expected": "low concern",
+    "message": "Your account was credited USD 20. If this transaction was not made by you, contact official bank support."
+  },
+  {
+    "id": "college",
+    "expected": "low concern",
+    "message": "College announcement: lectures begin at 9 AM tomorrow in Room 204. Please bring your notebooks."
+  },
+  {
+    "id": "personal",
+    "expected": "low concern",
+    "message": "Hi, see you at lunch tomorrow!"
+  },
+  {
+    "id": "sbi-otp",
+    "expected": "high concern",
+    "message": "SBI KYC update: share your OTP now or your account will be suspended."
+  },
+  {
+    "id": "internship-fee",
+    "expected": "high concern",
+    "message": "Congratulations! Your internship is confirmed. Pay a registration fee of Rs. 500 to secure your internship."
+  },
+  {
+    "id": "upi-refund",
+    "expected": "high concern",
+    "message": "To receive your UPI refund, enter your UPI PIN and approve the collect request."
+  },
+  {
+    "id": "delivery-link",
+    "expected": "needs verification",
+    "message": "Your parcel delivery failed. Update your address at https://parcel-help.example/verify."
+  },
+  {
+    "id": "vague",
+    "expected": "unclear",
+    "message": "Please do the needful."
+  },
+  {
+    "id": "account-verification",
+    "expected": "needs verification",
+    "message": "Your account needs verification. Contact us."
+  },
+  {
+    "id": "reactivation-payment",
+    "expected": "high concern",
+    "message": "Transfer Rs. 500 immediately to reactivate your account."
+  },
+  {
+    "id": "security-advice",
+    "expected": "low concern",
+    "message": "Security reminder: never share your OTP or UPI PIN. Use the official bank app."
+  },
+  {
+    "id": "ordinary-reminder",
+    "expected": "low concern",
+    "message": "Reminder: your library book is due tomorrow. Please return it at the library desk."
+  },
+  {
+    "id": "urgency-only",
+    "expected": "unclear",
+    "message": "Deadline in 10 minutes."
+  },
+  {
+    "id": "government-link",
+    "expected": "high concern",
+    "message": "Government KYC notice: verify your account at https://kyc-help.example now or your account will be blocked."
+  },
+  {
+    "id": "retail-no-link",
+    "expected": "low concern",
+    "message": "Retail sale: up to 40% off in our store this weekend."
+  },
+  {
+    "id": "short-promotion",
+    "expected": "needs verification",
+    "message": "Retail sale! Up to 60% off. Shop bit.ly/Demo You only have 2 days!"
+  },
+  {
+    "id": "hindi-otp",
+    "expected": "high concern",
+    "message": "बैंक KYC अपडेट: अपना OTP तुरंत भेजें, नहीं तो खाता बंद होगा।"
+  },
+  {
+    "id": "hindi-pin",
+    "expected": "high concern",
+    "message": "रिफंड पाने के लिए अपना पिन बताएं।"
+  },
+  {
+    "id": "unknown-url",
+    "expected": "needs verification",
+    "message": "Please see https://unfamiliar.example/notice"
+  },
+  {
+    "id": "lookalike",
+    "expected": "needs verification",
+    "message": "Visit https://paypa1.com/login"
+  },
+  {
+    "id": "malicious-looking",
+    "expected": "high concern",
+    "message": "Government KYC: your account will be blocked. Confirm at https://gov-kyc.example/login"
+  },
+  {
+    "id": "multi-unrelated",
+    "expected": "needs verification",
+    "message": "College internship announcement tomorrow.\n\nPay a registration fee at the library desk."
+  },
+  {
+    "id": "wrapped-otp",
+    "expected": "high concern",
+    "message": "Share your\nOTP now."
+  },
+  {
+    "id": "credit",
+    "expected": "low concern",
+    "message": "INR 1000 was credited to your account. Check your bank app for the balance."
+  }
+]

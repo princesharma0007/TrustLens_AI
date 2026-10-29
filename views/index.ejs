@@ -48,11 +48,14 @@
             <div id="analysis-results" hidden>
               <div class="report-overview"><p class="risk-badge" id="risk-level"></p><p class="mode-label" id="analysis-mode"></p><p id="result-summary"></p></div>
               <div class="result-grid"><section><h4>Detected signals</h4><div id="result-indicators"></div></section><section class="actions-section"><h4>Recommended actions</h4><ol id="result-actions"></ol></section></div>
+              <section id="url-findings-section" hidden aria-labelledby="url-findings-title"><h4 id="url-findings-title">URL checks</h4><p class="input-help">A no-known-threat result does not verify a URL, sender, or claim. Links are displayed as text and are not opened.</p><ul id="url-findings"></ul></section>
               <div class="uncertainty"><span class="info-symbol" aria-hidden="true">i</span><div><h4>Keep the context in mind</h4><p id="result-uncertainty"></p></div></div>
               <details class="extracted-text" id="extracted-text" hidden>
-                <summary>Extracted Text <span class="sample-note">Review what was analyzed</span></summary>
+                <summary>Text Extracted from Screenshot <span class="sample-note">Review what was analyzed</span></summary>
                 <p>Local OCR can miss or misread words. Compare this text with your screenshot; paste a corrected message if needed. Text is displayed here for this analysis only.</p>
-                <pre id="extracted-text-content" aria-label="Text extracted from your screenshot"></pre>
+                <pre id="extracted-text-content" aria-label="Text extracted from your screenshot" tabindex="0"></pre>
+                <button class="secondary-button" type="button" id="review-extracted-text" aria-describedby="ocr-review-help">Review and correct in text analyzer</button>
+                <p id="ocr-review-help">Review the text, correct any errors, then choose Analyze message. Separate unrelated messages with a blank line.</p>
               </details>
               <p class="result-disclaimer">An indicative assessment, not proof of safety or fraud. Verify important requests through an official channel.</p>
             </div>

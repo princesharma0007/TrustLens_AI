@@ -100,11 +100,15 @@ images, SVG, and files that cannot be fully decoded are rejected. Filenames and
 client MIME declarations are not trusted for server-side validation.
 
 The server decodes and normalizes the image with Sharp, then reads English text
-with local Tesseract.js OCR. Extracted text is passed directly to the existing
-rule-based analysis service. The response keeps the same six fields, with
+with local Tesseract.js OCR. Extracted text uses the same normalization, URL
+inspection, and core analysis pipeline as submitted text. The response keeps the same six fields, with
 `analysisMode: "ocr + rule-based"` by default (or `"ocr + gemma-4"` when the
-configured adapter actually succeeds), plus an OCR limitation in `uncertainty`. Neither the full extracted text nor the image is returned.
-This is **not Gemma analysis**.
+configured adapter actually succeeds), plus an OCR limitation in `uncertainty`.
+Optional `extractedText`, `ocrConfidence`, and `textExtractionStatus` enable review
+and correction. Images are never returned or saved. The default is local rules;
+a successful configured Gemma adapter analyzes extracted text, not image pixels.
+See [the shared analysis guide](docs/analysis-upgrade.md) for optional Web Risk
+configuration, URL privacy, correction flow, and measured evaluation results.
 
 English language data is included in the `@tesseract.js-data/eng` npm package.
 `npm ci` installs it together with the OCR engine. There is no startup model

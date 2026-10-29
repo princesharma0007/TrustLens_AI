@@ -9,6 +9,7 @@ class Node {
     this.textContent = ''; this.dataset = {}; this.attributes = {};
     this.events = {}; this.children = [];
   }
+  click() { this.events.click?.({ preventDefault() {} }); }
   addEventListener(type, callback) { this.events[type] = callback; }
   setAttribute(key, value) { this.attributes[key] = value; }
   toggleAttribute(key, force) { if (force) this.setAttribute(key, ''); else this.removeAttribute(key); if (key === 'hidden') this.hidden = force; }
@@ -29,7 +30,7 @@ class TestFormData {
 let nodes, browser, fetchMock;
 beforeEach(() => {
   jest.useFakeTimers();
-  const ids = ['analyzer-form', 'message', 'character-count', 'analyzer-error', 'analyzer-status', 'analyze-button', 'analysis-output', 'analysis-skeleton', 'analysis-results', 'results-title', 'risk-level', 'analysis-mode', 'result-summary', 'result-uncertainty', 'result-indicators', 'result-actions', 'text-panel', 'screenshot-error', 'screenshot-status', 'extracted-text', 'extracted-text-content'];
+  const ids = ['analyzer-form', 'message', 'character-count', 'analyzer-error', 'analyzer-status', 'analyze-button', 'analysis-output', 'analysis-skeleton', 'analysis-results', 'results-title', 'risk-level', 'analysis-mode', 'result-summary', 'result-uncertainty', 'result-indicators', 'result-actions', 'text-panel', 'screenshot-error', 'screenshot-status', 'extracted-text', 'extracted-text-content', 'review-extracted-text', 'ocr-review-help', 'text-tab', 'url-findings-section', 'url-findings'];
   for (const source of ['text', 'image']) {
     const prefix = `risk-notification-${source}`;
     ids.push(prefix, `${prefix}-title`, `${prefix}-description`, `${prefix}-demo`, `${prefix}-details`, ...['positive', 'danger', 'warning', 'neutral'].map(tone => `${prefix}-icon-${tone}`));
@@ -261,4 +262,32 @@ test.each([{ extractedText: 42 }, { extractedText: '' }, { ocrConfidence: 10 }, 
   await browser.TrustLensAnalysis.analyzeImage(new TestFile());
   expect(nodes['#analysis-output'].hidden).toBe(true);
   expect(nodes['#risk-notification-image'].hidden).toBe(true);
+});
+test('review copies OCR text into the editable text form without submitting', async () => {
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ...data, extractedText: 'Share your 0TP.' }) });
+  await browser.TrustLensAnalysis.analyzeImage(new TestFile());
+  nodes['#review-extracted-text'].events.click();
+  expect(nodes['#message'].value).toBe('Share your 0TP.');
+  expect(nodes['#message'].focused).toBe(true);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(nodes['#analysis-output'].hidden).toBe(true);
+});
+test('review never silently truncates an extraction larger than the text API limit', async () => {
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ...data, extractedText: 'a'.repeat(5001) }) });
+  await browser.TrustLensAnalysis.analyzeImage(new TestFile());
+  expect(nodes['#review-extracted-text'].disabled).toBe(true);
+  expect(nodes['#ocr-review-help'].textContent).toContain('exceeds 5,000');
+});
+test('URL reputation findings render as plain text using the shared report', async () => {
+  const url = 'https://example.com/<img onerror=alert(1)>';
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ...data, urlFindings: [{ url, status: 'unknown', reputationStatus: 'unknown', provider: 'none', signals: [] }] }) });
+  await browser.TrustLensAnalysis.analyzeImage(new TestFile());
+  expect(nodes['#url-findings-section'].hidden).toBe(false);
+  expect(nodes['#url-findings'].children[0].children[1].textContent).toBe(url);
+  expect(nodes['#url-findings'].children[0].children[2].textContent).toContain('not performed');
+});
+test('malformed URL reputation cannot render as a trusted report', async () => {
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ ...data, urlFindings: [{ url: 'https://example.com', status: 'safe' }] }) });
+  await browser.TrustLensAnalysis.analyzeImage(new TestFile());
+  expect(nodes['#analysis-output'].hidden).toBe(true);
 });

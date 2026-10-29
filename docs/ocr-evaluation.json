@@ -1,0 +1,119 @@
+{
+  "dataset": "Synthetic development images; English OCR only. Before uses legacy scaling, both passes use the same current OCR worker.",
+  "samples": 6,
+  "referenceCharacters": 335,
+  "beforeEdits": 0,
+  "afterEdits": 0,
+  "beforeCER": 0,
+  "afterCER": 0,
+  "rows": [
+    {
+      "name": "retail promotion",
+      "original": "Retail sale! Up to 60% off.\nShop: bit.ly/SaleDemo\nYou only have 2 days!",
+      "beforeText": "Retail sale! Up to 60% off.\nShop: bit.ly/SaleDemo\nYou only have 2 days!",
+      "extractedText": "Retail sale! Up to 60% off.\nShop: bit.ly/SaleDemo\nYou only have 2 days!",
+      "correctedText": "Retail sale! Up to 60% off.\nShop: bit.ly/SaleDemo\nYou only have 2 days!",
+      "beforeError": {
+        "edits": 0,
+        "referenceCharacters": 71
+      },
+      "afterError": {
+        "edits": 0,
+        "referenceCharacters": 71
+      },
+      "extractedRisk": "needs verification",
+      "correctedRisk": "needs verification",
+      "imageTextAssessmentParity": true
+    },
+    {
+      "name": "routine transaction",
+      "original": "Rs. 500 was debited from your account.",
+      "beforeText": "Rs. 500 was debited from your account.",
+      "extractedText": "Rs. 500 was debited from your account.",
+      "correctedText": "Rs. 500 was debited from your account.",
+      "beforeError": {
+        "edits": 0,
+        "referenceCharacters": 38
+      },
+      "afterError": {
+        "edits": 0,
+        "referenceCharacters": 38
+      },
+      "extractedRisk": "low concern",
+      "correctedRisk": "low concern",
+      "imageTextAssessmentParity": true
+    },
+    {
+      "name": "college announcement",
+      "original": "College announcement: lectures start\ntomorrow in Room 204.",
+      "beforeText": "College announcement: lectures start\ntomorrow in Room 204.",
+      "extractedText": "College announcement: lectures start\ntomorrow in Room 204.",
+      "correctedText": "College announcement: lectures start\ntomorrow in Room 204.",
+      "beforeError": {
+        "edits": 0,
+        "referenceCharacters": 58
+      },
+      "afterError": {
+        "edits": 0,
+        "referenceCharacters": 58
+      },
+      "extractedRisk": "low concern",
+      "correctedRisk": "low concern",
+      "imageTextAssessmentParity": true
+    },
+    {
+      "name": "small low-contrast transaction",
+      "original": "INR 500 was debited from your account.",
+      "beforeText": "INR 500 was debited from your account.",
+      "extractedText": "INR 500 was debited from your account.",
+      "correctedText": "INR 500 was debited from your account.",
+      "beforeError": {
+        "edits": 0,
+        "referenceCharacters": 38
+      },
+      "afterError": {
+        "edits": 0,
+        "referenceCharacters": 38
+      },
+      "extractedRisk": "low concern",
+      "correctedRisk": "low concern",
+      "imageTextAssessmentParity": true
+    },
+    {
+      "name": "multiple unrelated messages",
+      "original": "College internship announcement tomorrow.\n\n\nPay a registration fee at the library desk.",
+      "beforeText": "College internship announcement tomorrow.\n\nPay a registration fee at the library desk.",
+      "extractedText": "College internship announcement tomorrow.\n\nPay a registration fee at the library desk.",
+      "correctedText": "College internship announcement tomorrow.\n\n\nPay a registration fee at the library desk.",
+      "beforeError": {
+        "edits": 0,
+        "referenceCharacters": 85
+      },
+      "afterError": {
+        "edits": 0,
+        "referenceCharacters": 85
+      },
+      "extractedRisk": "needs verification",
+      "correctedRisk": "needs verification",
+      "imageTextAssessmentParity": true
+    },
+    {
+      "name": "wrapped OTP phishing",
+      "original": "Share your\nOTP to prevent account suspension.",
+      "beforeText": "Share your\nOTP to prevent account suspension.",
+      "extractedText": "Share your\nOTP to prevent account suspension.",
+      "correctedText": "Share your\nOTP to prevent account suspension.",
+      "beforeError": {
+        "edits": 0,
+        "referenceCharacters": 45
+      },
+      "afterError": {
+        "edits": 0,
+        "referenceCharacters": 45
+      },
+      "extractedRisk": "high concern",
+      "correctedRisk": "high concern",
+      "imageTextAssessmentParity": true
+    }
+  ]
+}

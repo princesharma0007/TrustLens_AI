@@ -81,6 +81,17 @@ if (analyzerForm) {
   }
   document.querySelector('#screenshot-input')?.addEventListener('change', () => clearRiskNotification('image'));
   document.querySelector('#remove-screenshot')?.addEventListener('click', () => clearRiskNotification('image'));
+  document.querySelector('#review-extracted-text')?.addEventListener('click', () => {
+    if (busy) return;
+    const text = document.querySelector('#extracted-text-content').textContent;
+    if (!text.trim() || text.length > 5000) return;
+    document.querySelector('#text-tab').click();
+    message.value = text;
+    updateCounter(); clearError(); clearRiskNotification();
+    output.hidden = true; output.dataset.hasResult = 'false';
+    status.textContent = 'Extracted text copied. Correct any errors, then choose Analyze message.';
+    message.focus();
+  });
   const riskLabels = new Map([
     ['high concern', 'High Concern'],
     ['low concern', 'Low Concern'],
@@ -132,6 +143,8 @@ if (analyzerForm) {
         !Array.isArray(data.indicators) || !Array.isArray(data.recommendedActions) ||
         !data.indicators.every((item) => item && isText(item.type) && isText(item.evidence) && isText(item.explanation)) ||
         !data.recommendedActions.every(isText) ||
+        (data.urlFindings !== undefined && (!Array.isArray(data.urlFindings) || data.urlFindings.length > 32 || !data.urlFindings.every(item => item && isText(item.url) && ['known_malicious', 'no_known_threat', 'suspicious', 'unknown'].includes(item.status) && ['known_malicious', 'no_known_threat', 'unknown'].includes(item.reputationStatus) && ['none', 'google-web-risk'].includes(item.provider) && Array.isArray(item.signals) && item.signals.every(isText)))) ||
+        (data.textExtractionStatus !== undefined && data.textExtractionStatus !== 'readable') ||
         (data.extractedText !== undefined && (!isText(data.extractedText) || data.extractedText.length > 20000)) ||
         (data.ocrConfidence !== undefined && (!Number.isFinite(data.ocrConfidence) || data.ocrConfidence < 45 || data.ocrConfidence > 100))) {
       throw new Error('The analysis service returned an unexpected or incomplete response. Please try again.');
@@ -158,10 +171,23 @@ if (analyzerForm) {
       : data.analysisMode === 'rule-based'
         ? 'Rule-based prototype — not Gemma AI analysis'
         : `Analysis mode reported by service: ${data.analysisMode}`;
+    const urlSection = document.querySelector('#url-findings-section');
+    const urlList = document.querySelector('#url-findings');
+    urlList.replaceChildren(); urlSection.hidden = !data.urlFindings?.length;
+    const urlLabels = { known_malicious: 'Threat-list match', no_known_threat: 'Checked: no known threat match', suspicious: 'Verification recommended', unknown: 'Unable to verify' };
+    for (const item of data.urlFindings || []) {
+      const row = document.createElement('li');
+      row.append(element('strong', urlLabels[item.status]), element('p', item.url), element('p', item.provider === 'none' ? 'External reputation lookup was not performed.' : `Google Web Risk: ${urlLabels[item.reputationStatus]}.`));
+      urlList.append(row);
+    }
     const extraction = document.querySelector('#extracted-text');
     extraction.open = false;
     extraction.hidden = source !== 'image' || demo || !isText(data.extractedText);
     document.querySelector('#extracted-text-content').textContent = extraction.hidden ? '' : data.extractedText;
+    document.querySelector('#review-extracted-text').disabled = !isText(data.extractedText) || data.extractedText.length > 5000;
+    document.querySelector('#ocr-review-help').textContent = data.extractedText?.length > 5000
+      ? 'This extraction exceeds 5,000 characters. Crop the screenshot or copy one message into the text analyzer.'
+      : 'Review the text, correct any errors, then choose Analyze message. Separate unrelated messages with a blank line.';
     document.querySelector('#result-summary').textContent = data.summary;
     document.querySelector('#result-uncertainty').textContent = data.uncertainty;
     const indicators = document.querySelector('#result-indicators');

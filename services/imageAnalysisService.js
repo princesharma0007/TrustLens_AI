@@ -1,6 +1,6 @@
 const sharp = require('sharp');
 const ocr = require('./ocrService');
-const gemmaService = require('./gemmaService');
+const analysisService = require('./analysisService');
 const { publicError } = ocr;
 const MAX_BYTES = 5 * 1024 * 1024;
 let processing = false;
@@ -32,9 +32,17 @@ async function analyze(buffer, { signal } = {}) {
       }
       // Full decoding rejects corrupted files. Re-encoding removes metadata and
       // bounds the OCR input without saving an image to disk.
-      normalized = await image.rotate().flatten({ background: '#ffffff' })
-        .resize({ width: 2000, height: 6000, fit: 'inside', withoutEnlargement: true })
-        .greyscale().png().timeout({ seconds: 10 }).toBuffer();
+      const base = await image.rotate().flatten({ background: '#ffffff' }).greyscale()
+        .png().timeout({ seconds: 10 }).toBuffer();
+      const stats = await sharp(base).stats();
+      const range = stats.channels[0].max - stats.channels[0].min;
+      // Mild contrast stretch only for low-contrast text. No thresholding or
+      // sharpening: those can erase punctuation and alter numbers/URL characters.
+      let prepared = sharp(base);
+      if (range >= 30 && range < 120) prepared = prepared.normalise({ lower: 0, upper: 100 });
+      const scale = metadata.width < 1000 ? Math.min(2, 1600 / metadata.width) : 1;
+      normalized = await prepared.resize({ width: Math.min(2000, Math.round(metadata.width * scale)), height: 6000, fit: 'inside', withoutEnlargement: scale === 1 })
+        .png().timeout({ seconds: 10 }).toBuffer();
     } catch {
       throw publicError(422, 'This image cannot be read. Use a clear, non-animated screenshot up to 12 megapixels.');
     }
@@ -42,14 +50,15 @@ async function analyze(buffer, { signal } = {}) {
     const result = await ocr.extractText(normalized, { signal });
     const text = typeof result?.text === 'string' ? result.text.trim() : '';
     if (!Number.isFinite(result?.confidence) || result.confidence < 45 || result.confidence > 100 || (text.match(/[a-z0-9]/gi) || []).length < 3) {
-      throw publicError(422, 'No clear English text could be read. Crop or sharpen the screenshot, or paste the message.');
+      throw Object.assign(publicError(422, 'No clear English text could be read. Crop or sharpen the screenshot, or paste the message.'), { textExtractionStatus: 'insufficient' });
     }
     if (result.truncated || text.length > 20000) throw publicError(422, 'The screenshot contains too much text. Crop it to one message and try again.');
-    const analysis = await gemmaService.analyze(text);
+    const analysis = await analysisService.analyze(text);
     return {
       ...analysis,
       extractedText: text,
       ocrConfidence: result.confidence,
+      textExtractionStatus: 'readable',
       analysisMode: `ocr + ${analysis.analysisMode}`,
       uncertainty: `${analysis.uncertainty} Text was extracted using local English OCR, which can miss or misread words. Review the screenshot and verify independently.`,
     };
